@@ -191,7 +191,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: TextStyle(color: Colors.white), // Texte en blanc dans le champ de texte
                     validator: (value) {
                       if (value == null || value.length <= 5) {
-                        return 'Password must be more than 6 characters.';
+                        return 'Password must be more than 5 characters.';
                       }
                       return null;
                     },

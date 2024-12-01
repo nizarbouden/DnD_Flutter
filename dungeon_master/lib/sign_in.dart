@@ -185,7 +185,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             );
                           } else {
                             // Si la connexion réussit, naviguer vers la page d'accueil
-                            Navigator.push(
+                            Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(builder: (context) => HomePage()),
                             );

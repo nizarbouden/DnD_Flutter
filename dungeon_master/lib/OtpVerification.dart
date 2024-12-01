@@ -3,6 +3,8 @@ import 'package:dungeon_master/service/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
+import 'Homepage.dart';
+
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
   final SignupDto signupData;
@@ -35,7 +37,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
       if (result['message'] == 'Signup successful') {
         // Redirection vers la page d'accueil ou de connexion
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+
       } else {
         // Afficher un message d'erreur
         ScaffoldMessenger.of(context).showSnackBar(

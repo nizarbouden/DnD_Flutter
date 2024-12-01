@@ -2,6 +2,7 @@ import 'package:dungeon_master/sign_in.dart';
 import 'package:flutter/material.dart';
 
 import 'Homepage.dart';
+import 'Settings.dart';
 import 'Sign_up.dart';
 
 void main() {
