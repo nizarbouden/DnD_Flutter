@@ -9,7 +9,8 @@ class AuthService {
 
 
   // Méthode générique pour envoyer des requêtes HTTP
-  Future<Map<String, dynamic>> _sendRequest(String method, String endpoint, [Map<String, dynamic>? body]) async {
+  Future<Map<String, dynamic>> _sendRequest(String method, String endpoint,
+      [Map<String, dynamic>? body]) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
       final headers = {'Content-Type': 'application/json'};
@@ -25,13 +26,16 @@ class AuthService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return json.decode(response.body);
       } else {
-        throw Exception('Request failed with status: ${response.statusCode}, response: ${response.body}');
+        throw Exception('Request failed with status: ${response
+            .statusCode}, response: ${response.body}');
       }
     } catch (e) {
       return {'error': true, 'message': 'Request failed: $e'};
     }
   }
-  Future<bool> validatePasswordChange(String userId, String oldPassword, String newPassword) async {
+
+  Future<bool> validatePasswordChange(String userId, String oldPassword,
+      String newPassword) async {
     final url = Uri.parse('http://10.0.2.2:3000/auth/validatePasswordChange/');
 
 
@@ -59,6 +63,57 @@ class AuthService {
     }
   }
 
+  Future<bool> resetPassword(String email, String newPassword) async {
+    final url = Uri.parse('http://10.0.2.2:3000/auth/ActuallyResetPassword'); // L'URL de l'API
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'password': newPassword, // Nouveau mot de passe
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Si la réponse est un succès
+        return true;
+      } else {
+        throw Exception('Failed to reset password: ${response.body}');
+      }
+    } catch (e) {
+      print('API Error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> verifyOtpForResetPassword(String email, String otp) async {
+    final endpoint = '/auth/verifyOtpResetPassword'; // L'endpoint pour vérifier l'OTP
+    final body = {
+      'email': email,
+      'otp': otp,
+    };
+
+    try {
+      // Appel de la méthode _sendRequest pour envoyer la requête POST
+      final response = await _sendRequest('POST', endpoint, body);
+
+      // Vérifier si la réponse contient un utilisateur
+      if (response['user'] != null) {
+        // Si l'utilisateur est trouvé, la vérification est réussie
+        return true;
+      } else {
+        throw Exception('OTP verification failed: ${response['message']}');
+      }
+    } catch (e) {
+      print('Erreur lors de la vérification de l\'OTP : $e');
+      return false;
+    }
+  }
+
 
   // Méthode pour envoyer la requête de réinitialisation du mot de passe
   Future<Map<String, dynamic>> resetPasswordRequestOTP(String email) async {
@@ -75,28 +130,47 @@ class AuthService {
   }
 
 
+
   Future<bool> checkEmailAvailability(String email) async {
-    print('Appel de checkEmailAvailability');  // Vérifie si la méthode est appelée
+    print('Appel de checkEmailAvailability avec email : $email');
+
     try {
-      final response = await _sendRequest('POST', '/auth/checkEmail', {'email': email});
+      // Construire l'URL de l'API
+      final url = Uri.parse('https://yourapiurl.com/auth/checkEmail');
 
-      // Afficher la réponse brute pour vérifier la structure
-      print('Réponse brute : $response');
+      // Envoyer la requête POST avec l'email dans le corps de la requête
+      final response = await http.post(
+        url,
+        body: json.encode({'email': email}),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
 
-      if (response is Map<String, dynamic>) {
-        if (response.containsKey('isAvailable')) {
-          return response['isAvailable'];
+      print('Réponse obtenue : ${response.body}'); // Vérifier la réponse brute
+
+      // Vérifier si la requête a réussi
+      if (response.statusCode == 200) {
+        // Décoder la réponse JSON
+        final responseData = json.decode(response.body);
+
+        // Vérifier si la clé 'isAvailable' existe et est de type booléen
+        if (responseData.containsKey('isAvailable') && responseData['isAvailable'] is bool) {
+          return responseData['isAvailable'];
         } else {
-          throw Exception('Invalid response format: Missing isAvailable key');
+          throw Exception('Invalid response format: Missing or incorrect isAvailable key');
         }
       } else {
-        throw Exception('Invalid response format: Response is not a Map');
+        // Si le statut HTTP n'est pas 200, lancer une exception
+        throw Exception('Request failed with status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Erreur : $e');
-      rethrow;
+      print('Erreur dans checkEmailAvailability : $e');
+      return false; // En cas d'erreur, considérer l'email comme indisponible
     }
   }
+
+
 
 
 
