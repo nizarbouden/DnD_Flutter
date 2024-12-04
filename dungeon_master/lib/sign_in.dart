@@ -2,6 +2,7 @@ import 'package:dungeon_master/service/auth_service.dart';
 import 'package:flutter/material.dart';
 
 
+import 'ForgotPasswordScreen.dart';
 import 'Homepage.dart';
 import 'Sign_up.dart';
 
@@ -11,13 +12,14 @@ class SignInApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        fontFamily: 'VecnaBold', // Define your global font
+        // Enlever la police personnalisée pour utiliser la police par défaut
+        fontFamily: 'Roboto', // Vous pouvez utiliser une autre police standard ici
         textTheme: TextTheme(
-          bodyLarge: TextStyle(fontFamily: 'VecnaBold', fontSize: 16),
-          bodyMedium: TextStyle(fontFamily: 'VecnaBold', fontSize: 14),
-          displayLarge: TextStyle(fontFamily: 'VecnaBold', fontSize: 32),
-          titleLarge: TextStyle(fontFamily: 'VecnaBold', fontSize: 20),
-          bodySmall: TextStyle(fontFamily: 'VecnaBold', fontSize: 12),
+          bodyLarge: TextStyle(fontSize: 16), // Style normal sans police spécifique
+          bodyMedium: TextStyle(fontSize: 14),
+          displayLarge: TextStyle(fontSize: 32),
+          titleLarge: TextStyle(fontSize: 20),
+          bodySmall: TextStyle(fontSize: 12),
         ),
       ),
       home: SignInScreen(),
@@ -172,30 +174,49 @@ class _SignInScreenState extends State<SignInScreen> {
                     child: ElevatedButton(
                       onPressed: () async {
                         if (_formKey.currentState?.validate() == true) {
-                          // Appel à l'API pour se connecter
-                          final response = await _authService.login(
-                            _emailController.text.trim(),
-                            _passwordController.text.trim(),
-                          );
+                          try {
+                            // Récupérer l'email et le mot de passe
+                            String email = _emailController.text.trim();
+                            String password = _passwordController.text.trim();
 
-                          if (response['error'] == true) {
-                            // Afficher le message d'erreur
+                            // Appeler le service de connexion (login)
+                            final response = await _authService.login(email, password);
+
+                            if (response['error'] == true) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(response['message'])),
+                              );
+                            } else {
+                              // Connexion réussie, maintenant récupérer l'utilisateur par son email
+                              final userResponse = await _authService.getUserByEmail(email);
+                              final user = userResponse['user'];
+                              if (userResponse['error'] == true) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(userResponse['message'])),
+                                );
+                              } else {
+                                // Navigation vers la page d'accueil
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => HomePage(user: user)),
+                                      (route) => false, // Cette condition efface toute la pile
+                                );
+                              }
+                            }
+                          } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(response['message'])),
-                            );
-                          } else {
-                            // Si la connexion réussit, naviguer vers la page d'accueil
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => HomePage()),
+                              SnackBar(content: Text('Une erreur est survenue. Veuillez réessayer.')),
                             );
                           }
                         }
                       },
-                      child: Text('SIGN IN', style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),),
+                      child: Text(
+                        'SIGN IN',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF7A393D),
                         minimumSize: Size(double.infinity, 50),
@@ -203,8 +224,10 @@ class _SignInScreenState extends State<SignInScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                    )
+                    ),
                   ),
+
+
                   SizedBox(height: 30), // Espacement entre le bouton "SIGN UP" et la partie en dessous
                   Center(
                     child: TextButton(
@@ -229,7 +252,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       onPressed: () { // Navigue vers la page de création de compte (SignUpScreen)
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => SignUpApp()),
+                          MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
                         );
                       },
                       child: Text(

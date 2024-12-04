@@ -2,8 +2,7 @@ import 'package:dungeon_master/service/auth_service.dart';
 import 'package:dungeon_master/sign_in.dart';
 import 'package:flutter/material.dart';
 import 'package:dungeon_master/service/auth_service.dart' as auth;
-import 'package:dungeon_master/OtpVerification.dart' as otp;
-import 'OtpVerification.dart';
+import 'Homepage.dart';
 
 void main() => runApp(SignUpApp());
 
@@ -29,6 +28,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
   bool _isEmailValid = false;
   bool _isPasswordValid = false;
+  String? _errorMessage;
   bool _isConfirmPasswordValid = false;  // Variable pour la validation du mot de passe confirmé
   final AuthService _authService = AuthService(); // Instance du service
   bool _isLoading = false; // Indicateur de progression
@@ -244,26 +244,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           });
 
                           try {
-                            final name = generateRandomPlayerName();
-                            final email = _emailController.text; // Récupère l'email de l'utilisateur
+                            final email = _emailController.text.trim(); // Récupère l'email de l'utilisateur et supprime les espaces inutiles
+
+                            // Validation de l'email
+                            if (email.isEmpty || !RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(email)) {
+                              // Affiche un message d'erreur si l'email est invalide
+                              setState(() {
+                                _errorMessage = 'Please enter a valid email address.';
+                              });
+                              return; // Arrête le processus si l'email est invalide
+                            }
+
+                            final name = generateRandomPlayerName(); // Générez le nom du joueur
                             final signupData = auth.SignupDto(
-                              password: _passwordController.text, name: name,
+                              password: _passwordController.text,
+                              name: name,
                             ); // Crée une instance de SignupDto avec les données de l'utilisateur
 
-                            await _signUp(); // Appel à la méthode _signUp
+                            await _signUp(); // Appel à la méthode _signUp (votre logique d'inscription)
 
-                            // Navigation vers OtpVerificationScreen après succès
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => OtpVerificationScreen(
-                                  email: email, // Passe l'email
-                                  signupData: signupData, // Passe les données d'inscription
-                                ),
-                              ),
-                            );
+                            // Ouvre un dialog pour la vérification OTP
+                            _showOtpVerificationDialog(context, email, signupData);
                           } catch (e) {
-                            // Gérer les erreurs ici si nécessaire
                             print('Erreur : $e');
                           } finally {
                             setState(() {
@@ -292,6 +294,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ),
                   ),
+
 
 
                   SizedBox(height: 30), // Espacement entre le bouton "SIGN UP" et la partie en dessous
@@ -415,3 +418,154 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 }
+
+
+
+void _showOtpVerificationDialog(BuildContext context, String email, auth.SignupDto signupData) {
+  final _otpController = TextEditingController();
+  AuthService _authService = AuthService();
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          bool _isLoading = false;
+          String? _errorMessage;
+
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: const Color(0xFF2C2C2C),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFFE1C699)),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Verify OTP',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _otpController,
+                      decoration: InputDecoration(
+                        labelText: 'OTP Code',
+                        labelStyle: const TextStyle(color: Color(0xFFE1C699)),
+                        errorText: _errorMessage,
+                        prefixIcon: const Icon(Icons.lock, color: Color(0xFFE1C699)),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Color(0xFFE1C699)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Color(0xFFE1C699)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E1E),
+                      ),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: _isLoading
+                          ? null
+                          : () async {
+                        final otp = _otpController.text.trim();
+                        if (!RegExp(r'^\d{6}$').hasMatch(otp)) {
+                          setState(() {
+                            _errorMessage = 'Enter a valid 6-digit OTP.';
+                          });
+                          return;
+                        }
+
+                        setState(() {
+                          _isLoading = true;
+                          _errorMessage = null;
+                        });
+
+                        try {
+                          // Appel à la méthode verifyOtpLogin
+                          final result = await _authService.verifyOtpLogin(
+                            email,
+                            otp,
+                            signupData.toJson(),
+                          );
+
+                          if (result['message'] == 'Signup successful') {
+                            // Récupérer l'utilisateur après une inscription réussie
+                            final user = result['user']; // Assurez-vous que la réponse contient l'utilisateur
+
+                            // Fermer la boîte de dialogue
+                            Navigator.of(context).pop();
+
+                            // Navigation vers la page d'accueil avec l'utilisateur
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => HomePage(user: user), // Passer l'utilisateur ici
+                              ),
+                            );
+                          } else {
+                            setState(() {
+                              _errorMessage = result['message'] ?? 'Invalid OTP code.';
+                            });
+                          }
+                        } catch (e) {
+                          setState(() {
+                            _errorMessage = 'An error occurred. Please try again.';
+                          });
+                        } finally {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        }
+                      },
+                      icon: _isLoading
+                          ? const CircularProgressIndicator(color: Color(0xFFE1C699))
+                          : const Icon(Icons.verified, color: Color(0xFFE1C699)),
+                      label: Text(
+                        _isLoading ? 'Verifying...' : 'Verify OTP',
+                        style: const TextStyle(color: Color(0xFFE1C699)),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E1E1E),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+
+
