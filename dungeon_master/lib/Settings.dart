@@ -3,12 +3,30 @@ import 'package:dungeon_master/sign_in.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-class SettingsPage extends StatelessWidget {
-  final Map<String, dynamic> user; // Définir l'utilisateur
+class SettingsPage extends StatefulWidget {
+  final Map<String, dynamic> user; // Données utilisateur initiales
 
-  // Constructeur qui prend un utilisateur
   SettingsPage({required this.user});
 
+  @override
+  _SettingsPageState createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  late Map<String, dynamic> user; // État local pour stocker les données utilisateur
+// Déclarer la variable pour stocker l'email actuel
+  String currentUserEmail = ""; // Email de l'utilisateur
+  @override
+  void initState() {
+    super.initState();
+    user = widget.user; // Initialisez l'état local avec les données passées
+  }
+  // Méthode pour mettre à jour les données utilisateur
+  void _updateUserData(Map<String, dynamic> updatedUser) {
+    setState(() {
+      user = updatedUser;
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -55,7 +73,6 @@ class SettingsPage extends StatelessWidget {
   }
   // Section du profil avec l'image et le nom
   Widget _buildProfileSection(BuildContext context) {
-    // Extraire le nom et l'email de l'utilisateur
     final String userName = user['name'] ?? 'Nom inconnu'; // Utiliser une valeur par défaut si 'name' est null
     final String userEmail = user['email'] ?? 'Email inconnu';
     return Card(
@@ -99,7 +116,6 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
-
   // Fonction pour construire une carte de paramètres généraux
   Widget _buildSettingsCard(BuildContext context, {required String title, required List<Widget> children}) {
     return Card(
@@ -149,9 +165,13 @@ class SettingsPage extends StatelessWidget {
               // Revenir à la page précédente
               Navigator.pop(context); // Ferme la page actuelle et revient à la page précédente
             } else if (label == "Change Name") {
-              // Afficher la pop-up pour changer le nom
-              String currentName = user['name'];
-              _showChangeNameDialog(context,currentName);
+              if (user == null || user['name'] == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('User data is missing or invalid')),
+                );
+                return;
+              }
+              _showChangeNameDialog(context, user);
             } else if (label == "Change Password") {
               // Afficher la pop-up pour changer le mot de passe
               _showChangePasswordDialog(context);
@@ -186,8 +206,6 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
-
-
 
 
   void _showLogoutConfirmationDialog(BuildContext context) {
@@ -292,95 +310,97 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  void _showChangeNameDialog(BuildContext context, String currentName) {
-    // Initialiser le contrôleur avec le nom actuel de l'utilisateur
-    TextEditingController _nameController = TextEditingController(text: currentName);
-    AuthService apiService = AuthService(); // Créez une instance du service API
+  void _showChangeNameDialog(BuildContext context, Map<String, dynamic> user) {
+    if (user == null || user['_id'] == null) {
+      print('User or User ID is missing!');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User data or ID is not available')),
+      );
+      return;
+    }
+
+    TextEditingController _nameController = TextEditingController(text: user['name']);
+    AuthService apiService = AuthService(); // Service API
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12), // Coins arrondis
+            borderRadius: BorderRadius.circular(12),
           ),
-          backgroundColor: const Color(0xFF2C2C2C), // Fond sombre
+          backgroundColor: const Color(0xFF2C2C2C),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Bouton "X" pour fermer
                 Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
-                    icon: const Icon(Icons.close, color: Color(0xFFE1C699)), // Couleur dorée
+                    icon: const Icon(Icons.close, color: Color(0xFFE1C699)),
                     onPressed: () {
-                      Navigator.of(context).pop(); // Ferme la pop-up
+                      Navigator.of(context).pop();
                     },
                   ),
                 ),
                 const SizedBox(height: 10),
-
-                // Titre
                 Text(
                   'Change Account Name',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFE1C699), // Couleur dorée
-                    fontFamily: 'Serif', // Remplacez par la police que vous utilisez
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Champ de saisie
-                TextField(
-                  controller: _nameController, // Utilisation du contrôleur pré-rempli
-                  decoration: InputDecoration(
-                    labelText: 'New Name',
-                    labelStyle: const TextStyle(
-                      color: Color(0xFFE1C699), // Couleur dorée
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.person,
-                      color: Color(0xFFE1C699), // Couleur dorée
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Color(0xFFE1C699)), // Bordure dorée
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Color(0xFFE1C699)), // Bordure dorée
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFF1E1E1E), // Fond sombre
-                  ),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFFE1C699), // Couleur dorée
+                    color: Color(0xFFE1C699),
                     fontFamily: 'Serif',
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Bouton "Save"
+                TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'New Name',
+                    labelStyle: const TextStyle(
+                      color: Color(0xFFE1C699),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.person,
+                      color: Color(0xFFE1C699),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Color(0xFFE1C699)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Color(0xFFE1C699)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFF1E1E1E),
+                  ),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFFE1C699),
+                    fontFamily: 'Serif',
+                  ),
+                ),
+                const SizedBox(height: 20),
                 ElevatedButton.icon(
                   onPressed: () async {
                     String newName = _nameController.text.trim();
 
                     if (newName.isNotEmpty) {
                       try {
-                        // Remplacez "userId" par l'ID réel de l'utilisateur
-                        String userId = '673bb51ff1145297991dca61';
+                        String userId = user['_id']; // R cup re l'ID utilisateur
                         final result = await apiService.updateUserName(userId, newName);
 
                         String message = result['message'] ?? 'Name updated successfully';
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text(message)),
                         );
+
+                        // Mettre   jour l' tat local de la page Settings
+                        _updateUserData({...user, 'name': newName});
 
                         // Fermer la pop-up
                         Navigator.of(context).pop();
@@ -395,15 +415,15 @@ class SettingsPage extends StatelessWidget {
                       );
                     }
                   },
-                  icon: const Icon(Icons.save, color: Color(0xFFE1C699)), // Icône dorée
+                  icon: const Icon(Icons.save, color: Color(0xFFE1C699)),
                   label: const Text(
                     'Save',
-                    style: TextStyle(color: Color(0xFFE1C699)), // Texte doré
+                    style: TextStyle(color: Color(0xFFE1C699)),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E1E1E), // Fond sombre
+                    backgroundColor: const Color(0xFF1E1E1E),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8), // Coins arrondis
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),

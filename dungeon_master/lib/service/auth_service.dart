@@ -31,11 +31,11 @@ class AuthService {
       return {'error': true, 'message': 'Request failed: $e'};
     }
   }
-Future<bool> validatePasswordChange(String userId, String oldPassword, String newPassword) async {
-  final url = Uri.parse('http://10.0.2.2:3000/auth/validatePasswordChange/');
+  Future<bool> validatePasswordChange(String userId, String oldPassword, String newPassword) async {
+    final url = Uri.parse('http://10.0.2.2:3000/auth/validatePasswordChange/');
 
 
-  try {
+    try {
       final response = await http.post(
         url,
         headers: {
@@ -104,23 +104,23 @@ Future<bool> validatePasswordChange(String userId, String oldPassword, String ne
 
   // Méthode de connexion
   Future<Map<String, dynamic>> login(String email, String password) async {
-  final response = await _sendRequest(
-  'POST',
-  '/auth/login',
-  {'email': email, 'password': password}
-  );
-  return response;
+    final response = await _sendRequest(
+        'POST',
+        '/auth/login',
+        {'email': email, 'password': password}
+    );
+    return response;
   }
 
 
   // Inscription
   Future<Map<String, dynamic>> signUp(String email, String password) async {
-  final response = await _sendRequest(
-  'POST',
-  '/auth/signup',
-  {'email': email, 'password': password}
-  );
-  return response;
+    final response = await _sendRequest(
+        'POST',
+        '/auth/signup',
+        {'email': email, 'password': password}
+    );
+    return response;
   }
 
 
@@ -139,22 +139,22 @@ Future<bool> validatePasswordChange(String userId, String oldPassword, String ne
 
   // Vérification OTP
   Future<Map<String, dynamic>> verifyOtp(String email, String otp, SignupDto signupData) async {
-  final response = await _sendRequest(
-  'POST',
-  '/auth/verifyOtp',
-  {'email': email, 'otp': otp, 'signupData': signupData.toJson()}
-  );
-  return response;
+    final response = await _sendRequest(
+        'POST',
+        '/auth/verifyOtp',
+        {'email': email, 'otp': otp, 'signupData': signupData.toJson()}
+    );
+    return response;
   }
 
   // Mise à jour du nom d'utilisateur
   Future<Map<String, dynamic>> updateUserName(String userId, String newName) async {
-  final response = await _sendRequest(
-  'PUT',
-  '/auth/$userId/updateName',
-  {'name': newName}
-  );
-  return response;
+    final response = await _sendRequest(
+        'PUT',
+        '/auth/$userId/updateName',
+        {'name': newName}
+    );
+    return response;
   }
 
 
