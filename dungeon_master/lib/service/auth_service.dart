@@ -34,6 +34,67 @@ class AuthService {
     }
   }
 
+
+// Méthode pour récupérer toutes les icônes des joueurs
+  Future<List<Map<String, dynamic>>> fetchPlayerIcons() async {
+    final uri = Uri.parse('$baseUrl/playericons'); // L'URL de votre API pour les icônes
+    try {
+      final response = await http.get(uri, headers: {'Content-Type': 'application/json'});
+
+      if (response.statusCode == 200) {
+        // Retourne une liste d'icônes en s'assurant que c'est une liste de Map<String, dynamic>
+        return List<Map<String, dynamic>>.from(json.decode(response.body));
+      } else {
+        throw Exception('Failed to load player icons');
+      }
+    } catch (e) {
+      print('Error fetching player icons: $e');
+      return []; // Retourne une liste vide en cas d'erreur
+    }
+  }
+  Future<Map<String, dynamic>> updateAvatar(String userId, String newAvatarUrl) async {
+    try {
+      final response = await http.put(
+        Uri.parse('http://10.0.2.2:3000/auth/$userId/updateImage'),
+        body: json.encode({
+          'image': newAvatarUrl,  // Utilisation du champ 'image' comme une chaîne de caractères
+        }),
+        headers: {
+          'Content-Type': 'application/json',  // Indiquer que la requête est en JSON
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'message': 'Avatar updated successfully'};
+      } else {
+        return {
+          'error': 'Failed to update avatar',
+          'details': response.body,  // Ajoutez des détails dans la réponse d'erreur
+        };
+      }
+    } catch (e) {
+      return {'error': 'An error occurred: $e'};
+    }
+  }
+
+// Méthode pour récupérer les icônes par propriétaire
+  Future<List<Map<String, dynamic>>> fetchIconsByOwner(String ownerId) async {
+    final uri = Uri.parse('$baseUrl/playericons/owner/$ownerId'); // L'URL avec l'ownerId
+    try {
+      final response = await http.get(uri, headers: {'Content-Type': 'application/json'});
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Retourne une liste d'icônes en s'assurant que c'est une liste de Map<String, dynamic>
+        return List<Map<String, dynamic>>.from(json.decode(response.body));
+      } else {
+        throw Exception('Failed to load icons for owner $ownerId');
+      }
+    } catch (e) {
+      print('Error fetching icons for owner: $e');
+      return []; // Retourne une liste vide en cas d'erreur
+    }
+  }
+
   Future<bool> validatePasswordChange(String userId, String oldPassword,
       String newPassword) async {
     final url = Uri.parse('http://10.0.2.2:3000/auth/validatePasswordChange/');

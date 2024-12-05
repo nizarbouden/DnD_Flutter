@@ -14,12 +14,19 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late Map<String, dynamic> user; // État local pour stocker les données utilisateur
-// Déclarer la variable pour stocker l'email actuel
   String currentUserEmail = ""; // Email de l'utilisateur
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>(); // Ajoutez cette clé
+
   @override
   void initState() {
     super.initState();
     user = widget.user; // Initialisez l'état local avec les données passées
+  }
+  void _updateEmail(String newEmail) {
+    setState(() {
+      user['email'] = newEmail; // Mettez à jour l'email dans le state
+    });
   }
   // Méthode pour mettre à jour les données utilisateur
   void _updateUserData(Map<String, dynamic> updatedUser) {
@@ -27,9 +34,26 @@ class _SettingsPageState extends State<SettingsPage> {
       user = updatedUser;
     });
   }
+
+  Future<List<Map<String, dynamic>>> _fetchPlayerIcons(String userId) async {
+    try {
+      // Appelle la méthode fetchIconsByOwner() du service AuthService avec l'ID utilisateur
+      List<Map<String, dynamic>> icons = await AuthService().fetchIconsByOwner(userId);
+      return icons; // Retourne la liste des icônes
+    } catch (e) {
+      // En cas d'erreur, affichez un message ou traitez l'exception
+      throw Exception("Erreur lors du chargement des icônes : $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final String userId = user['_id'] ?? ''; // Récupère l'ID utilisateur ou une chaîne vide
+    if (userId.isEmpty) {
+      throw Exception("User ID is required for the Drawer");
+    }
     return Scaffold(
+      key: _scaffoldKey, // Associez la clé ici
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
@@ -69,42 +93,55 @@ class _SettingsPageState extends State<SettingsPage> {
           ],
         ),
       ),
+
+      drawer: _buildDrawer(context, userId), // Associe le Drawer ici
     );
   }
-  // Section du profil avec l'image et le nom
+
   Widget _buildProfileSection(BuildContext context) {
-    final String userName = user['name'] ?? 'Nom inconnu'; // Utiliser une valeur par défaut si 'name' est null
-    final String userEmail = user['email'] ?? 'Email inconnu';
+    final String userName = user['name'] ?? 'Nom inconnu'; // Nom de l'utilisateur
+    final String userEmail = user['email'] ?? 'Email inconnu'; // Email de l'utilisateur
+    final String? userImage = user['image']; // Image dynamique de l'utilisateur
+
     return Card(
       color: Colors.black.withOpacity(0.8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            // Image du profil
-            CircleAvatar(
-              radius: 40,
-              backgroundImage: AssetImage('assets/profile_image.png'), // Remplacez par votre image de profil
+            // Image du profil cliquable
+            GestureDetector(
+              onTap: () {
+                _scaffoldKey.currentState!.openDrawer(); // Ouvrir le Drawer
+              },
+              child: CircleAvatar(
+                radius: 40,
+                backgroundImage: (userImage != null && userImage.isNotEmpty)
+                    ? (userImage.startsWith('assets/')
+                    ? AssetImage(userImage) as ImageProvider
+                    : NetworkImage(userImage))
+                    : AssetImage('assets/default_profile.png'), // Image par défaut
+              ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             // Nom de l'utilisateur
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  userName, // Affiche le nom dynamique de l'utilisateur
-                  style: TextStyle(
+                  userName, // Affiche le nom dynamique
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.amber,
                   ),
                 ),
                 Text(
-                  userEmail, // Affiche l'email dynamique de l'utilisateur
-                  style: TextStyle(
+                  userEmail, // Affiche l'email dynamique
+                  style: const TextStyle(
                     fontSize: 14,
                     color: Colors.grey,
                   ),
@@ -116,6 +153,118 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
+
+  Widget _buildDrawer(BuildContext context, String ownerId) {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 100.0, right: 20.0),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.3,
+          width: MediaQuery.of(context).size.width * 0.8,
+          child: Drawer(
+            child: Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/bg_friends.webp'), // Fond du drawer
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: AuthService().fetchIconsByOwner(ownerId), // Charge les icônes liées à l'utilisateur
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    print("Erreur FutureBuilder : ${snapshot.error}");
+                    return Center(child: Text('Erreur de chargement des icônes'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('Aucune icône disponible'));
+                  } else {
+                    List<Map<String, dynamic>> icons = snapshot.data!;
+                    print("Données des icônes reçues : $icons"); // Debug
+
+                    return GridView.builder(
+                      padding: EdgeInsets.all(16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: icons.length,
+                      itemBuilder: (context, index) {
+                        var iconData = icons[index];
+                        String iconPath = iconData['image'] ?? '';
+
+                        if (iconPath.isEmpty || !iconPath.startsWith('assets/')) {
+                          return Center(child: Icon(Icons.error));
+                        }
+
+                        return GestureDetector(
+                          onTap: () async {
+                            // Met à jour l'image de l'utilisateur
+                            await _updateUserAvatar(ownerId, iconPath, context);
+
+                            // Ferme le drawer après la mise à jour
+                            Navigator.of(context).pop();
+
+                            // Recharge la page en utilisant setState
+                            setState(() {
+                              // Met à jour l'image dans les données utilisateur si nécessaire
+                              user['image'] = iconPath; // Assurez-vous que 'user' est bien mis à jour
+                            });
+                          },
+                          child: Image.asset(
+                            iconPath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              print("Erreur pour $iconPath : $error");
+                              return Icon(Icons.error);
+                            },
+                          ),
+                        );
+
+                      },
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+
+
+
+// Méthode pour mettre à jour l'avatar de l'utilisateur
+  Future<void> _updateUserAvatar(String userId, String newAvatarUrl, BuildContext context) async {
+    try {
+      AuthService authService = AuthService();
+      // Appeler la méthode updateAvatar du service AuthService
+      final response = await authService.updateAvatar(userId, newAvatarUrl);
+
+      // Vérifier la réponse
+      if (response.containsKey('message') && response['message'] == 'Avatar updated successfully') {
+        // Afficher un message de succès
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Avatar updated successfully')));
+      } else {
+        // Afficher un message d'erreur
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update avatar')));
+        print(response);
+      }
+    } catch (e) {
+      // En cas d'erreur lors de l'appel
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+
+
+
   // Fonction pour construire une carte de paramètres généraux
   Widget _buildSettingsCard(BuildContext context, {required String title, required List<Widget> children}) {
     return Card(
@@ -162,9 +311,14 @@ class _SettingsPageState extends State<SettingsPage> {
               // Afficher la boîte de dialogue de confirmation
               _showLogoutConfirmationDialog(context);
             } else if (label == "Back") {
-              // Revenir à la page précédente
-              Navigator.pop(context); // Ferme la page actuelle et revient à la page précédente
-            } else if (label == "Change Name") {
+              // Si l'utilisateur a été modifié, renvoyer les nouvelles données à la page précédente
+              if (user != null) {
+                Navigator.pop(context, user);  // Passer les données de l'utilisateur modifié à la page précédente
+              } else {
+                Navigator.pop(context);  // Revenir sans données si l'utilisateur n'a pas été modifié
+              }
+            }
+            else if (label == "Change Name") {
               if (user == null || user['name'] == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('User data is missing or invalid')),
@@ -541,7 +695,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ElevatedButton.icon(
                       onPressed: () async {
                         final newEmail = _emailController.text.trim();
-                        var userId = "673bb51ff1145297991dca61"; // ID utilisateur (remplacez par une source dynamique)
+                        String userId = user['_id']; // ID utilisateur (remplacez par une source dynamique)
 
                         // Validation de l'email : vérifie si l'email est vide
                         if (newEmail.isEmpty) {
@@ -595,12 +749,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
 
-  void _showOtpVerificationDialog(BuildContext context, String email, String userId) {
+  void _showOtpVerificationDialog(BuildContext context, String newEmail, String userId) {
     final _otpController = TextEditingController();
     AuthService _authService = AuthService();
     String? errorMessage;
     bool isLoading = false;
-    userId = "673bb51ff1145297991dca61";
 
     showDialog(
       context: context,
@@ -696,7 +849,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           });
 
                           try {
-                            final response = await _authService.verifyOtpForChangeEmail(email, otp, userId);
+                            final response = await _authService.verifyOtpForChangeEmail(newEmail, otp, userId);
 
                             setState(() {
                               isLoading = false;
@@ -714,10 +867,25 @@ class _SettingsPageState extends State<SettingsPage> {
                                 ),
                               );
 
-                              // Fermer le dialogue après un changement réussi
+                              // Ferme les dialogues
                               Navigator.of(context).pop(); // Ferme le dialogue OTP
                               Navigator.of(context).pop(); // Ferme le dialogue de changement d'email
-                            } else {
+
+                              // Mettez à jour les données de l'utilisateur après changement d'email
+                              Map<String, dynamic> updatedUser = {
+                                ...user, // Garde les autres informations de l'utilisateur intactes
+                                'email': newEmail, // Mettez à jour l'email
+                              };
+
+                              // Naviguer à nouveau vers la page SettingsPage avec les nouvelles données utilisateur
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SettingsPage(user: updatedUser), // Passez les données mises à jour
+                                ),
+                              );
+                            }
+                            else {
                               setState(() {
                                 errorMessage = response['message'] ?? 'Invalid OTP or OTP expired';
                               });
@@ -757,6 +925,8 @@ class _SettingsPageState extends State<SettingsPage> {
       },
     );
   }
+
+
 
 
 
@@ -902,7 +1072,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         if (currentPassword.isNotEmpty && newPassword.isNotEmpty) {
                           try {
                             // Remplacez "userId" par l'ID réel de l'utilisateur
-                            String userId = '673bb51ff1145297991dca61';
+                            String userId = user['_id'];
 
                             // Étape 1 : Valider les mots de passe avec l'API
                             final isValid = await apiService.validatePasswordChange(userId, currentPassword, newPassword);
@@ -950,7 +1120,6 @@ class _SettingsPageState extends State<SettingsPage> {
       },
     );
   }
-
 
   Widget _buildAudioSlider() {
     return Column(
