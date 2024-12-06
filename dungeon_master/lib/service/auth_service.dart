@@ -41,7 +41,7 @@ class AuthService {
     try {
       final response = await http.get(uri, headers: {'Content-Type': 'application/json'});
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200|| response.statusCode == 201) {
         // Retourne une liste d'icônes en s'assurant que c'est une liste de Map<String, dynamic>
         return List<Map<String, dynamic>>.from(json.decode(response.body));
       } else {
@@ -52,6 +52,28 @@ class AuthService {
       return []; // Retourne une liste vide en cas d'erreur
     }
   }
+
+  Future<List<Map<String, dynamic>>> fetchUsers() async {
+    final uri = Uri.parse('$baseUrl/auth/findAll'); // Assurez-vous que l'endpoint est correct
+
+    try {
+      final response = await http.get(uri, headers: {'Content-Type': 'application/json'});
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Vérifiez que la réponse est une liste
+        final List<dynamic> jsonData = json.decode(response.body);
+
+        // Convertissez chaque élément de la liste en Map<String, dynamic>
+        return List<Map<String, dynamic>>.from(jsonData.map((item) => item as Map<String, dynamic>));
+      } else {
+        throw Exception('Failed to load users: ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching users: $e');
+      return [];
+    }
+  }
+
   Future<Map<String, dynamic>> updateAvatar(String userId, String newAvatarUrl) async {
     try {
       final response = await http.put(
@@ -197,7 +219,7 @@ class AuthService {
 
     try {
       // Construire l'URL de l'API
-      final url = Uri.parse('https://yourapiurl.com/auth/checkEmail');
+      final url = Uri.parse('http://10.0.2.2:3000/auth/checkEmail');
 
       // Envoyer la requête POST avec l'email dans le corps de la requête
       final response = await http.post(

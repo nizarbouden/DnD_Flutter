@@ -421,7 +421,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
 
 
-void _showOtpVerificationDialog(BuildContext context, String email, auth.SignupDto signupData) {
+  void _showOtpVerificationDialog(BuildContext context, String email, auth.SignupDto signupData) {
   final _otpController = TextEditingController();
   AuthService _authService = AuthService();
 

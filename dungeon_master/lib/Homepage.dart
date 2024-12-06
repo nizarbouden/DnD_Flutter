@@ -1,10 +1,11 @@
 import 'package:dungeon_master/service/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'CustomNavbar.dart';
+import 'PlayersPieChart.dart';
 import 'Settings.dart';
 
 class HomePage extends StatefulWidget {
-  final Map<String, dynamic> user; // Définir l'utilisateur
+  final ValueNotifier<Map<String, dynamic>> user; // Utiliser un ValueNotifier
 
   HomePage({required this.user});
 
@@ -15,27 +16,46 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final AuthService _userService = AuthService();
+  int totalPlayers = 0; // Ajouter une variable d'état pour les joueurs
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this); // Deux onglets
-    _tabController.addListener(_onTabChanged); // Écouteur pour le changement d'onglet
-  }
-
-  void _onTabChanged() {
-    setState(() {}); // Mettre à jour l'UI lors du changement d'onglet
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
+    fetchTotalPlayers(); // Appeler la méthode lors de l'initialisation
   }
 
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChanged); // Retirer l'écouteur pour éviter les fuites de mémoire
+    _tabController.removeListener(_onTabChanged);
     super.dispose();
   }
+
+  void _onTabChanged() {
+    setState(() {});
+  }
+  Future<void> fetchTotalPlayers() async {
+    try {
+      // Appeler la méthode de votre service pour récupérer tous les utilisateurs
+      final users = await _userService.fetchUsers();
+
+      // Vérifier si `users` est une liste et mettre à jour l'état
+      if (users != null && users is List) {
+        setState(() {
+          totalPlayers = users.length; // Mettre à jour le total des joueurs
+        });
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } catch (e) {
+      print('Error fetching players: $e');
+    }
+  }
+
   Future<void> _navigateToSettings() async {
     try {
-      // Récupération des données utilisateur
-
-      final response = await _userService.getUserByEmail(widget.user['email']);
+      final response = await _userService.getUserByEmail(widget.user.value['email']);
       if (response['error'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response['message'])),
@@ -44,13 +64,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       }
       final user = response['user'];
 
-      // Navigation avec les données utilisateur
-      Navigator.push(
+      final updatedUser = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => SettingsPage(user: user),
         ),
       );
+
+      if (updatedUser != null) {
+        widget.user.value = updatedUser; // Mettre à jour le ValueNotifier
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur lors de la récupération des données utilisateur.')),
@@ -64,60 +87,52 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       extendBody: true,
       body: Stack(
         children: [
-          // Image de fond
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/bg_hs.jpeg'), // Assurez-vous que l'image est dans le dossier `assets`
+                image: AssetImage('assets/bg_hs.jpeg'),
                 fit: BoxFit.cover,
               ),
             ),
           ),
-          // Contenu principal
           CustomScrollView(
             slivers: [
-              // AppBar dans un SliverAppBar pour permettre le défilement avec le contenu
               SliverAppBar(
-                backgroundColor: Colors.black.withOpacity(0.8), // Transparence
+                backgroundColor: Colors.black.withOpacity(0.8),
                 title: Center(
                   child: Text(
                     'Dashboard',
-                    style: TextStyle(color: Colors.white), // Couleur du titre
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
                 pinned: true,
-                floating: false,
                 bottom: TabBar(
                   controller: _tabController,
-                  indicatorColor: Colors.black, // Couleur de l'indicateur sous les onglets
-                  labelColor: Colors.deepPurple, // Couleur des onglets sélectionnés (mauve)
-                  unselectedLabelColor: Colors.grey, // Couleur des onglets non sélectionnés (gris)
-                  labelStyle: TextStyle(fontWeight: FontWeight.bold), // Style pour les labels sélectionnés
-                  unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal), // Style pour les labels non sélectionnés
+                  indicatorColor: Colors.black,
+                  labelColor: Colors.deepPurple,
+                  unselectedLabelColor: Colors.grey,
+                  labelStyle: TextStyle(fontWeight: FontWeight.bold),
                   tabs: [
                     Tab(
-                      icon: Icon(
-                        Icons.dashboard,
-                        color: _tabController.index == 0 ? Colors.deepPurple : Colors.grey, // Dynamique en fonction de la sélection
-                      ),
+                      icon: Icon(Icons.dashboard),
                       text: 'Vue d\'ensemble',
                     ),
                     Tab(
-                      icon: Icon(
-                        Icons.settings,
-                        color: _tabController.index == 1 ? Colors.deepPurple : Colors.grey, // Dynamique en fonction de la sélection
-                      ),
+                      icon: Icon(Icons.settings),
                       text: 'Gestion',
                     ),
                   ],
                 ),
               ),
-              // TabBarView sous forme de SliverList pour gérer correctement le défilement
               SliverFillRemaining(
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    OverviewTab(email: widget.user['email']),
+                    OverviewTab(
+                      email: widget.user.value['email'],
+                      totalPlayers: totalPlayers,
+                      onlinePlayers: 1,// Passer le nombre dynamique
+                    ),
                     ManagementTab(),
                   ],
                 ),
@@ -130,9 +145,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         onButtonPressed: (index) async {
           switch (index) {
             case 0:
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => HomePage(user: widget.user['user'])),
+                MaterialPageRoute(
+                  builder: (context) => HomePage(user: widget.user),
+                ),
               );
               break;
             case 1:
@@ -151,40 +168,91 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 }
 
-class OverviewTab extends StatelessWidget {
-  final String email; // Utilisation de l'email pour cet onglet
 
-  OverviewTab({required this.email});
+class OverviewTab extends StatelessWidget {
+  final String email;
+  final int totalPlayers;
+  final int onlinePlayers;
+
+  OverviewTab({required this.email, required this.totalPlayers, required this.onlinePlayers});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: GridView.count(
-        shrinkWrap: true, // Utilisation de shrinkWrap pour éviter que GridView ne prenne toute la place
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
+      child: Column(
         children: [
-          DashboardCard(
-            title: 'Utilisateurs actifs',
-            value: '150',
-            icon: Icons.group,
+          // Carte spéciale pour la charte graphique qui prend toute la largeur
+          Card(
+            color: Colors.black.withOpacity(0.8),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Carte Charte Graphique
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Charte Graphique',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      SizedBox(height: 10),
+                      // Vous pouvez ajouter ici un graphique ou un visuel lié à la charte graphique
+                      Icon(Icons.color_lens, size: 40, color: Colors.white),
+                    ],
+                  ),
+                  // Carte des joueurs en ligne et hors ligne à droite
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Joueurs en ligne: $onlinePlayers',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'Joueurs hors ligne: ${totalPlayers - onlinePlayers}',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-          DashboardCard(
-            title: 'Parties jouées',
-            value: '1200',
-            icon: Icons.videogame_asset,
-          ),
-          DashboardCard(
-            title: 'Objets échangés',
-            value: '320',
-            icon: Icons.swap_horiz,
-          ),
-          DashboardCard(
-            title: 'Armes améliorées',
-            value: '45',
-            icon: Icons.upgrade,
+
+          // Utilisation de Expanded pour que GridView puisse s'ajuster à l'espace restant
+          Expanded(
+            child: GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              children: [
+                DashboardCard(
+                  title: 'Parties jouées',
+                  value: '1200',
+                  icon: Icons.videogame_asset,
+                ),
+                DashboardCard(
+                  title: 'Objets échangés',
+                  value: '320',
+                  icon: Icons.swap_horiz,
+                ),
+                DashboardCard(
+                  title: 'Armes améliorées',
+                  value: '45',
+                  icon: Icons.upgrade,
+                ),
+                DashboardCard(
+                  title: 'Armes améliorées',
+                  value: '45',
+                  icon: Icons.upgrade,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -192,11 +260,15 @@ class OverviewTab extends StatelessWidget {
   }
 }
 
+
+
+
 class ManagementTab extends StatelessWidget {
   final List<Item> _items = [
     Item(header: 'Gestion des Objets', body: 'Ajouter, modifier ou supprimer des objets.'),
     Item(header: 'Gestion des Utilisateurs', body: 'Modifier les permissions ou supprimer des comptes.'),
   ];
+
 
   @override
   Widget build(BuildContext context) {

@@ -175,11 +175,9 @@ class _SignInScreenState extends State<SignInScreen> {
                       onPressed: () async {
                         if (_formKey.currentState?.validate() == true) {
                           try {
-                            // Récupérer l'email et le mot de passe
                             String email = _emailController.text.trim();
                             String password = _passwordController.text.trim();
 
-                            // Appeler le service de connexion (login)
                             final response = await _authService.login(email, password);
 
                             if (response['error'] == true) {
@@ -187,18 +185,21 @@ class _SignInScreenState extends State<SignInScreen> {
                                 SnackBar(content: Text(response['message'])),
                               );
                             } else {
-                              // Connexion réussie, maintenant récupérer l'utilisateur par son email
                               final userResponse = await _authService.getUserByEmail(email);
                               final user = userResponse['user'];
+
                               if (userResponse['error'] == true) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text(userResponse['message'])),
                                 );
                               } else {
-                                // Navigation vers la page d'accueil
+                                // Envelopper les données de l'utilisateur dans un ValueNotifier
+                                ValueNotifier<Map<String, dynamic>> userNotifier = ValueNotifier<Map<String, dynamic>>(user);
+
+                                // Navigation vers la page d'accueil avec le ValueNotifier
                                 Navigator.pushAndRemoveUntil(
                                   context,
-                                  MaterialPageRoute(builder: (context) => HomePage(user: user)),
+                                  MaterialPageRoute(builder: (context) => HomePage(user: userNotifier)),
                                       (route) => false, // Cette condition efface toute la pile
                                 );
                               }
@@ -210,6 +211,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           }
                         }
                       },
+
                       child: Text(
                         'SIGN IN',
                         style: TextStyle(
