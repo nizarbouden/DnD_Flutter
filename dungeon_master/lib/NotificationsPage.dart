@@ -1,11 +1,97 @@
 import 'package:flutter/material.dart';
 
-import 'Homepage.dart';
-
-class NotificationsPage extends StatelessWidget {
+class NotificationsPage extends StatefulWidget {
   final ValueNotifier<Map<String, dynamic>> user;
 
   NotificationsPage({required this.user});
+
+  @override
+  _NotificationsPageState createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends State<NotificationsPage> {
+  Map<String, List<Map<String, dynamic>>> notifications = {
+    'New': [
+      {
+        'name': 'Julia Hosten',
+        'role': 'Senior Designer',
+        'time': '13:55',
+        'message': 'Hey Kate how are things going...',
+        'isNew': true,
+      },
+      {
+        'name': 'Chris Evans',
+        'role': 'Software Engineer',
+        'time': '12:30',
+        'message': 'Can we reschedule the meeting?',
+        'isNew': true,
+      },
+    ],
+    'Yesterday': [
+      {
+        'name': 'Olivia Holt',
+        'role': 'Junior Designer',
+        'time': '09:45',
+        'message': 'Let me know when you\'re available.',
+        'isNew': false,
+      },
+      {
+        'name': 'Mark Smith',
+        'role': 'Team Lead',
+        'time': '08:20',
+        'message': 'Good job on the recent project!',
+        'isNew': false,
+      },
+      {
+        'name': 'Emma Watson',
+        'role': 'Project Manager',
+        'time': '07:15',
+        'message': 'We need to finalize the report by EOD.',
+        'isNew': false,
+      },
+    ],
+    'Last Week': [
+      {
+        'name': 'Steve Rogers',
+        'role': 'Quality Analyst',
+        'time': 'Last Monday',
+        'message': 'All tests passed successfully.',
+        'isNew': false,
+      },
+      {
+        'name': 'Tony Stark',
+        'role': 'CTO',
+        'time': 'Last Sunday',
+        'message': 'Keep pushing the limits!',
+        'isNew': false,
+      },
+    ],
+  };
+
+  Future<bool> _confirmDelete(String section, int index) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Notification'),
+        content: Text('Are you sure you want to delete this notification?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(false); // Annulation
+            },
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(true); // Confirmation
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,129 +112,53 @@ class NotificationsPage extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
-          children: [
-            // Section "New"
-            Text(
-              'New',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 10),
-            NotificationItem(
-              name: 'Julia Hosten',
-              role: 'Senior Designer',
-              time: '13:55',
-              message: 'Hey Kate how are things going...',
-              isNew: true,
-            ),
-            NotificationItem(
-              name: 'Chris Evans',
-              role: 'Software Engineer',
-              time: '12:30',
-              message: 'Can we reschedule the meeting?',
-              isNew: true,
-            ),
-            SizedBox(height: 20),
-
-            // Section "Yesterday"
-            Text(
-              'Yesterday',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 10),
-            NotificationItem(
-              name: 'Olivia Holt',
-              role: 'Junior Designer',
-              time: '09:45',
-              message: 'Let me know when you\'re available.',
-              isNew: false,
-            ),
-            NotificationItem(
-              name: 'Mark Smith',
-              role: 'Team Lead',
-              time: '08:20',
-              message: 'Good job on the recent project!',
-              isNew: false,
-            ),
-            NotificationItem(
-              name: 'Emma Watson',
-              role: 'Project Manager',
-              time: '07:15',
-              message: 'We need to finalize the report by EOD.',
-              isNew: false,
-            ),
-            SizedBox(height: 20),
-
-            // Section "Last Week"
-            Text(
-              'Last Week',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 10),
-            NotificationItem(
-              name: 'Steve Rogers',
-              role: 'Quality Analyst',
-              time: 'Last Monday',
-              message: 'All tests passed successfully.',
-              isNew: false,
-            ),
-            NotificationItem(
-              name: 'Tony Stark',
-              role: 'CTO',
-              time: 'Last Sunday',
-              message: 'Keep pushing the limits!',
-              isNew: false,
-            ),
-          ],
+          children: notifications.keys.map((section) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  section,
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
+                ...List.generate(notifications[section]!.length, (index) {
+                  final notification = notifications[section]![index];
+                  return Dismissible(
+                    key: UniqueKey(),
+                    direction: DismissDirection.endToStart,
+                    confirmDismiss: (direction) async {
+                      return await _confirmDelete(section, index);
+                    },
+                    onDismissed: (direction) {
+                      setState(() {
+                        notifications[section]!.removeAt(index);
+                      });
+                    },
+                    background: Container(
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Icon(Icons.delete, color: Colors.white),
+                    ),
+                    child: NotificationItem(
+                      name: notification['name'],
+                      role: notification['role'],
+                      time: notification['time'],
+                      message: notification['message'],
+                      isNew: notification['isNew'],
+                    ),
+                  );
+                }),
+                SizedBox(height: 20),
+              ],
+            );
+          }).toList(),
         ),
       ),
-
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 3,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          if (index == 0) {
-            // Retour à la page d'accueil et passer le `user` en paramètre
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => HomePage(user: user), // Passer `user`
-              ),
-            );
-          }
-        },
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: '',
-          ),
-        ],
-      ),
-
     );
   }
 }

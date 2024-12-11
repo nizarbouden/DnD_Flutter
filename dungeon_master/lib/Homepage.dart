@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart'; // Ajouter cette dépendance
 import 'NotificationsPage.dart';
 import 'Settings.dart';
+import 'ShopManagementPage.dart';
 import 'UserManagementPage.dart';
 
 class HomePage extends StatefulWidget {
@@ -86,10 +87,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 children: [
-                  _buildStatCard('Active Jobs', '24', Icons.work, Colors.blue),
-                  _buildStatCard('Candidates', '298', Icons.group, Colors.green),
-                  _buildStatCard('Events', '54', Icons.event, Colors.purple),
-                  _buildStatCard('To-dos', '48', Icons.check_circle, Colors.orange),
+                  _buildStatCard('Items', '124', Icons.inventory, Colors.blue),
+                  _buildStatCard('Players', '298', Icons.group, Colors.green),
+                  _buildStatCard('Events', '3', Icons.event, Colors.purple),
+                  _buildStatCard('Game Mode', '4', Icons.sports_esports, Colors.orange),
+
                 ],
               ),
               SizedBox(height: 20),
@@ -128,6 +130,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
         onTap: (index) {
+          // Ne rien faire si l'onglet actuel est déjà sélectionné
+          if (index == _currentIndex) return;
+
           setState(() {
             _currentIndex = index; // Mettre à jour l'index actif
           });
@@ -140,14 +145,20 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 builder: (context) => HomePage(user: widget.user),
               ),
             );
+          } else if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ShopManagementPage(user: widget.user),
+              ),
+            );
           } else if (index == 2) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => UserManagementPage(),
+                builder: (context) => UserManagementPage(user: widget.user),
               ),
             );
-
           } else if (index == 3) {
             _navigateToSettings();
           }
@@ -171,6 +182,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           ),
         ],
       ),
+
     );
   }
 
