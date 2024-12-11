@@ -23,28 +23,6 @@ class _SettingsPageState extends State<SettingsPage> {
     super.initState();
     user = widget.user; // Initialisez l'état local avec les données passées
   }
-  void _updateEmail(String newEmail) {
-    setState(() {
-      user['email'] = newEmail; // Mettez à jour l'email dans le state
-    });
-  }
-  // Méthode pour mettre à jour les données utilisateur
-  void _updateUserData(Map<String, dynamic> updatedUser) {
-    setState(() {
-      user = updatedUser;
-    });
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchPlayerIcons(String userId) async {
-    try {
-      // Appelle la méthode fetchIconsByOwner() du service AuthService avec l'ID utilisateur
-      List<Map<String, dynamic>> icons = await AuthService().fetchIconsByOwner(userId);
-      return icons; // Retourne la liste des icônes
-    } catch (e) {
-      // En cas d'erreur, affichez un message ou traitez l'exception
-      throw Exception("Erreur lors du chargement des icônes : $e");
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,116 +131,6 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-
-  Widget _buildDrawer(BuildContext context, String ownerId) {
-    return Align(
-      alignment: Alignment.topLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 100.0, right: 20.0),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.3,
-          width: MediaQuery.of(context).size.width * 0.8,
-          child: Drawer(
-            child: Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/bg_friends.webp'), // Fond du drawer
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: AuthService().fetchIconsByOwner(ownerId), // Charge les icônes liées à l'utilisateur
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    print("Erreur FutureBuilder : ${snapshot.error}");
-                    return Center(child: Text('Erreur de chargement des icônes'));
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(child: Text('Aucune icône disponible'));
-                  } else {
-                    List<Map<String, dynamic>> icons = snapshot.data!;
-                    print("Données des icônes reçues : $icons"); // Debug
-
-                    return GridView.builder(
-                      padding: EdgeInsets.all(16),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                      ),
-                      itemCount: icons.length,
-                      itemBuilder: (context, index) {
-                        var iconData = icons[index];
-                        String iconPath = iconData['image'] ?? '';
-
-                        if (iconPath.isEmpty || !iconPath.startsWith('assets/')) {
-                          return Center(child: Icon(Icons.error));
-                        }
-
-                        return GestureDetector(
-                          onTap: () async {
-                            // Met à jour l'image de l'utilisateur
-                            await _updateUserAvatar(ownerId, iconPath, context);
-
-                            // Ferme le drawer après la mise à jour
-                            Navigator.of(context).pop();
-
-                            // Recharge la page en utilisant setState
-                            setState(() {
-                              // Met à jour l'image dans les données utilisateur si nécessaire
-                              user['image'] = iconPath; // Assurez-vous que 'user' est bien mis à jour
-                            });
-                          },
-                          child: Image.asset(
-                            iconPath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              print("Erreur pour $iconPath : $error");
-                              return Icon(Icons.error);
-                            },
-                          ),
-                        );
-
-                      },
-                    );
-                  }
-                },
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-
-
-
-
-// Méthode pour mettre à jour l'avatar de l'utilisateur
-  Future<void> _updateUserAvatar(String userId, String newAvatarUrl, BuildContext context) async {
-    try {
-      AuthService authService = AuthService();
-      // Appeler la méthode updateAvatar du service AuthService
-      final response = await authService.updateAvatar(userId, newAvatarUrl);
-
-      // Vérifier la réponse
-      if (response.containsKey('message') && response['message'] == 'Avatar updated successfully') {
-        // Afficher un message de succès
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Avatar updated successfully')));
-      } else {
-        // Afficher un message d'erreur
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update avatar')));
-        print(response);
-      }
-    } catch (e) {
-      // En cas d'erreur lors de l'appel
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
-  }
-
-
 
 
   // Fonction pour construire une carte de paramètres généraux
@@ -463,6 +331,90 @@ class _SettingsPageState extends State<SettingsPage> {
       },
     );
   }
+
+
+  Widget _buildDrawer(BuildContext context, String ownerId) {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 100.0, right: 20.0),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.3,
+          width: MediaQuery.of(context).size.width * 0.8,
+          child: Drawer(
+            child: Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/bg_friends.webp'), // Fond du drawer
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: AuthService().fetchIconsByOwner(ownerId), // Charge les icônes liées à l'utilisateur
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    print("Erreur FutureBuilder : ${snapshot.error}");
+                    return Center(child: Text('Erreur de chargement des icônes'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('Aucune icône disponible'));
+                  } else {
+                    List<Map<String, dynamic>> icons = snapshot.data!;
+                    print("Données des icônes reçues : $icons"); // Debug
+
+                    return GridView.builder(
+                      padding: EdgeInsets.all(16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: icons.length,
+                      itemBuilder: (context, index) {
+                        var iconData = icons[index];
+                        String iconPath = iconData['image'] ?? '';
+
+                        if (iconPath.isEmpty || !iconPath.startsWith('assets/')) {
+                          return Center(child: Icon(Icons.error));
+                        }
+
+                        return GestureDetector(
+                          onTap: () async {
+                            // Met à jour l'image de l'utilisateur
+                            await _updateUserAvatar(ownerId, iconPath, context);
+
+                            // Ferme le drawer après la mise à jour
+                            Navigator.of(context).pop();
+
+                            // Recharge la page en utilisant setState
+                            setState(() {
+                              // Met à jour l'image dans les données utilisateur si nécessaire
+                              user['image'] = iconPath; // Assurez-vous que 'user' est bien mis à jour
+                            });
+                          },
+                          child: Image.asset(
+                            iconPath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              print("Erreur pour $iconPath : $error");
+                              return Icon(Icons.error);
+                            },
+                          ),
+                        );
+
+                      },
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 
   void _showChangeNameDialog(BuildContext context, Map<String, dynamic> user) {
     if (user == null || user['_id'] == null) {
@@ -928,10 +880,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
 
 
-
-
-
-
   void _showChangePasswordDialog(BuildContext context) {
     TextEditingController _currentPasswordController = TextEditingController();
     TextEditingController _newPasswordController = TextEditingController();
@@ -1121,29 +1069,50 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildAudioSlider() {
-    return Column(
-      children: [
-        Slider(
-          value: 50,
-          min: 0,
-          max: 100,
-          divisions: 10,
-          onChanged: (value) {
-            // Action pour changer le volume
-          },
-          activeColor: Colors.amber,
-          inactiveColor: Colors.brown[700],
-        ),
-        Text(
-          "Volume: 50%",
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
+
+
+  // Méthode pour mettre à jour l'avatar de l'utilisateur
+  Future<void> _updateUserAvatar(String userId, String newAvatarUrl, BuildContext context) async {
+    try {
+      AuthService authService = AuthService();
+      // Appeler la méthode updateAvatar du service AuthService
+      final response = await authService.updateAvatar(userId, newAvatarUrl);
+
+      // Vérifier la réponse
+      if (response.containsKey('message') && response['message'] == 'Avatar updated successfully') {
+        // Afficher un message de succès
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Avatar updated successfully')));
+      } else {
+        // Afficher un message d'erreur
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update avatar')));
+        print(response);
+      }
+    } catch (e) {
+      // En cas d'erreur lors de l'appel
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
   }
+
+  Future<List<Map<String, dynamic>>> _fetchPlayerIcons(String userId) async {
+    try {
+      // Appelle la méthode fetchIconsByOwner() du service AuthService avec l'ID utilisateur
+      List<Map<String, dynamic>> icons = await AuthService().fetchIconsByOwner(userId);
+      return icons; // Retourne la liste des icônes
+    } catch (e) {
+      // En cas d'erreur, affichez un message ou traitez l'exception
+      throw Exception("Erreur lors du chargement des icônes : $e");
+    }
+  }
+  void _updateEmail(String newEmail) {
+    setState(() {
+      user['email'] = newEmail; // Mettez à jour l'email dans le state
+    });
+  }
+  // Méthode pour mettre à jour les données utilisateur
+  void _updateUserData(Map<String, dynamic> updatedUser) {
+    setState(() {
+      user = updatedUser;
+    });
+  }
+
 }
