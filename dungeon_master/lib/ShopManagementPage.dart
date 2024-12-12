@@ -1,9 +1,11 @@
 import 'package:dungeon_master/service/auth_service.dart';
 import 'package:flutter/material.dart';
 
+import 'CategoryPage.dart';
 import 'Homepage.dart';
 import 'Settings.dart';
 import 'UserManagementPage.dart';
+import 'ItemDetailPage.dart';
 
 class ShopManagementPage extends StatefulWidget {
   final ValueNotifier<Map<String, dynamic>> user;
@@ -186,23 +188,69 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
-                  _buildCategoryItem("Icon", "assets/avataricon1.webp"),
+                  _buildCategoryItem("Icon", "assets/avataricon1.webp",
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryPage(),
+                    ),),),
                   SizedBox(width: 16),
-                  _buildCategoryItem("Weapon", "assets/weap3.png"),
+                  _buildCategoryItem("Weapon", "assets/weap3.png",
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryPage(),
+                      ),
+                    ),),
                   SizedBox(width: 16),
-                  _buildCategoryItem("Helmet", "assets/head1.webp"),
+                  _buildCategoryItem("Helmet", "assets/head1.webp",
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryPage(),
+                      ),),),
                   SizedBox(width: 16),
-                  _buildCategoryItem("Body", "assets/body1.webp"),
+                  _buildCategoryItem("Body", "assets/body1.webp",
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryPage(),
+                      ),),),
                   SizedBox(width: 16),
-                  _buildCategoryItem("Legs", "assets/leg1.webp"),
+                  _buildCategoryItem("Legs", "assets/leg1.webp",
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryPage(),
+                      ),),),
                   SizedBox(width: 16),
-                  _buildCategoryItem("Artifact", "assets/artifact1.webp"),
+                  _buildCategoryItem("Artifact", "assets/artifact1.webp",
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryPage(),
+                      ),),),
                   SizedBox(width: 16),
-                  _buildCategoryItem("Ring", "assets/ring1.png"),
+                  _buildCategoryItem("Ring", "assets/ring1.png",
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryPage(),
+                      ),),),
                   SizedBox(width: 16),
-                  _buildCategoryItem("Gold", "assets/coin_ic.png"),
+                  _buildCategoryItem("Gold", "assets/coin_ic.png",
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryPage(),
+                      ),),),
                   SizedBox(width: 16),
-                  _buildCategoryItem("Gems", "assets/gem_ic.png"),
+                  _buildCategoryItem("Gems", "assets/gem_ic.png",
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryPage(),
+                      ),),),
                 ],
               ),
             ),
@@ -316,77 +364,111 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
     );
   }
 
-  Widget _buildCategoryItem(String title, String imagePath) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundImage: AssetImage(imagePath),
-        ),
-        SizedBox(height: 8),
-        Text(
-          title,
-          style: TextStyle(fontSize: 14),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProductCard(
-      String title, String imagePath, String oldPrice, String newPrice) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 8),
-      width: 160,
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(
-              aspectRatio: 1.0,
-              child: ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
+  Widget _buildCategoryItem(String title, String imagePath, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap, // Appelle la fonction lors d'un clic
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 4,
+                  offset: Offset(2, 2),
                 ),
-              ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                title,
-                style: TextStyle(fontWeight: FontWeight.bold),
-                maxLines: 1, // Limite le texte à une ligne
-                overflow: TextOverflow.ellipsis, // Ajoute "..." si le texte dépasse
-              ),
+            child: CircleAvatar(
+              radius: 35,
+              backgroundImage: AssetImage(imagePath),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                oldPrice,
-                style: TextStyle(
-                  decoration: TextDecoration.lineThrough,
-                  color: Colors.red,
-                  fontSize: 12, // Réduit la taille pour économiser de l'espace
-                ),
-              ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                newPrice,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
 
+  Widget _buildProductCard(
+      String title, String imagePath, String oldPrice, String newPrice) {
+    return GestureDetector(
+      onTap: () {
+        // Navigation vers ItemDetailPage avec les données du produit
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ItemDetailpage(
+              title: title,        // Titre du produit
+              imagePath: imagePath, // Image du produit
+              oldPrice: oldPrice,   // Ancien prix
+              newPrice: newPrice,   // Nouveau prix
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 8),
+        width: 160,
+        child: Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AspectRatio(
+                aspectRatio: 1.0,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                  child: Image.asset(
+                    imagePath,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  title,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                  maxLines: 1, // Limite le texte à une ligne
+                  overflow: TextOverflow.ellipsis, // Ajoute "..." si le texte dépasse
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  oldPrice,
+                  style: TextStyle(
+                    decoration: TextDecoration.lineThrough,
+                    color: Colors.red,
+                    fontSize: 12, // Réduit la taille pour économiser de l'espace
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  newPrice,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
 }
