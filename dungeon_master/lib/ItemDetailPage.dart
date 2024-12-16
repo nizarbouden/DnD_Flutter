@@ -29,11 +29,12 @@ class ItemDetailpage extends StatelessWidget {
             // Image principale
             AspectRatio(
               aspectRatio: 1,
-              child: Image.network(
+              child: Image.asset(
                 imagePath, // Utilisation de l'image passée en paramètre
                 fit: BoxFit.cover,
               ),
             ),
+
             SizedBox(height: 16),
 
             // Détails du produit
@@ -49,12 +50,6 @@ class ItemDetailpage extends StatelessWidget {
                       Text(
                         title, // Utilisation du titre passé en paramètre
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.favorite_border),
-                        onPressed: () {
-                          // Ajouter aux favoris
-                        },
                       ),
                     ],
                   ),
@@ -86,36 +81,6 @@ class ItemDetailpage extends StatelessWidget {
                   ),
                   SizedBox(height: 16),
 
-                  // Options de couleur
-                  Text(
-                    'Colors',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _ColorOption(color: Colors.black),
-                      _ColorOption(color: Colors.blue),
-                      _ColorOption(color: Colors.grey),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-
-                  // Options de taille
-                  Text(
-                    'Size',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _SizeOption(size: 'XS'),
-                      _SizeOption(size: 'S'),
-                      _SizeOption(size: 'M'),
-                    ],
-                  ),
-                  SizedBox(height: 24),
-
                   // Boutons
                   Row(
                     children: [
@@ -127,7 +92,7 @@ class ItemDetailpage extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
                           ),
-                          child: Text('ADD TO CART'),
+                          child: Text('MODIFY'),
                         ),
                       ),
                       SizedBox(width: 16),
@@ -139,7 +104,7 @@ class ItemDetailpage extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
                           ),
-                          child: Text('BUY NOW'),
+                          child: Text('DELETE'),
                         ),
                       ),
                     ],
@@ -155,41 +120,5 @@ class ItemDetailpage extends StatelessWidget {
 }
 
 
-class _ColorOption extends StatelessWidget {
-  final Color color;
 
-  const _ColorOption({required this.color});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(right: 8),
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.grey),
-      ),
-    );
-  }
-}
-
-class _SizeOption extends StatelessWidget {
-  final String size;
-
-  const _SizeOption({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(right: 8),
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(size, style: TextStyle(fontWeight: FontWeight.bold)),
-    );
-  }
-}
