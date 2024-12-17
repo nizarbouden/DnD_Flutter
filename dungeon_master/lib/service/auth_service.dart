@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
@@ -48,7 +46,6 @@ class AuthService {
         throw Exception('Failed to load player icons');
       }
     } catch (e) {
-      print('Error fetching player icons: $e');
       return []; // Retourne une liste vide en cas d'erreur
     }
   }
@@ -69,7 +66,6 @@ class AuthService {
         throw Exception('Failed to load users: ${response.body}');
       }
     } catch (e) {
-      print('Error fetching users: $e');
       return [];
     }
   }
@@ -112,7 +108,7 @@ class AuthService {
         throw Exception('Failed to load icons for owner $ownerId');
       }
     } catch (e) {
-      print('Error fetching icons for owner: $e');
+
       return []; // Retourne une liste vide en cas d'erreur
     }
   }
@@ -141,13 +137,12 @@ class AuthService {
         throw Exception('Validation failed: ${response.body}');
       }
     } catch (e) {
-      print('Erreur API : $e');
       rethrow;
     }
   }
 
   Future<bool> resetPassword(String email, String newPassword) async {
-    final url = Uri.parse('http://10.0.2.2:3000/auth/ActuallyResetPassword'); // L'URL de l'API
+    final url = Uri.parse('http://10.0.2.2:3000/admins/ActuallyResetPassword'); // L'URL de l'API
 
     try {
       final response = await http.post(
@@ -162,19 +157,19 @@ class AuthService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        print("reset succ");
         // Si la réponse est un succès
         return true;
       } else {
         throw Exception('Failed to reset password: ${response.body}');
       }
     } catch (e) {
-      print('API Error: $e');
       return false;
     }
   }
 
   Future<bool> verifyOtpForResetPassword(String email, String otp) async {
-    final endpoint = '/auth/verifyOtpResetPassword'; // L'endpoint pour vérifier l'OTP
+    const endpoint = '/admins/verifyOtpResetPassword'; // L'endpoint pour vérifier l'OTP
     final body = {
       'email': email,
       'otp': otp,
@@ -192,7 +187,6 @@ class AuthService {
         throw Exception('OTP verification failed: ${response['message']}');
       }
     } catch (e) {
-      print('Erreur lors de la vérification de l\'OTP : $e');
       return false;
     }
   }
@@ -201,7 +195,7 @@ class AuthService {
   // Méthode pour envoyer la requête de réinitialisation du mot de passe
   Future<Map<String, dynamic>> resetPasswordRequestOTP(String email) async {
     // Définir l'endpoint de la requête
-    const endpoint = '/auth/resetPasswordRequestOTP';
+    const endpoint = '/admins/resetPasswordRequestOTP';
 
     // Créer le corps de la requête avec l'email
     final body = {
@@ -211,65 +205,77 @@ class AuthService {
     // Appeler la méthode générique _sendRequest
     return await _sendRequest('POST', endpoint, body);
   }
-
-
-
-  Future<bool> checkEmailAvailability(String email) async {
-    print('Appel de checkEmailAvailability avec email : $email');
-
+  Future<bool> checkAdminEmailAvailability(String email) async {
     try {
-      // Construire l'URL de l'API
-      final url = Uri.parse('http://10.0.2.2:3000/auth/checkEmail');
+      // Build the URL with the email as a query parameter
+      final url = Uri.parse('http://10.0.2.2:3000/admins/checkEmail?email=$email');
 
-      // Envoyer la requête POST avec l'email dans le corps de la requête
+      // Send a POST request without a body (since email is in the query parameter)
       final response = await http.post(
         url,
-        body: json.encode({'email': email}),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
 
-      print('Réponse obtenue : ${response.body}'); // Vérifier la réponse brute
-
-      // Vérifier si la requête a réussi
-      if (response.statusCode == 200) {
-        // Décoder la réponse JSON
+      // Check for successful status code
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Decode the response JSON (expected to be a boolean)
         final responseData = json.decode(response.body);
 
-        // Vérifier si la clé 'isAvailable' existe et est de type booléen
-        if (responseData.containsKey('isAvailable') && responseData['isAvailable'] is bool) {
-          return responseData['isAvailable'];
+        if (responseData is bool) {
+          return responseData; // Return true if available, false otherwise
         } else {
-          throw Exception('Invalid response format: Missing or incorrect isAvailable key');
+          throw Exception('Invalid response format: Expected a boolean value');
         }
       } else {
-        // Si le statut HTTP n'est pas 200, lancer une exception
+        // Handle unexpected status codes
         throw Exception('Request failed with status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Erreur dans checkEmailAvailability : $e');
-      return false; // En cas d'erreur, considérer l'email comme indisponible
+      print('Error checking email availability: $e');
+      return false; // Consider email unavailable in case of an error
     }
   }
 
 
-
-
-
-
-
-  // Méthode de connexion
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await _sendRequest(
-        'POST',
-        '/auth/login',
-        {'email': email, 'password': password}
-    );
-    return response;
+    const String apiUrl = 'http://10.0.2.2:3000/admins/login';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': responseData['message'],
+          'admin': responseData['admin'],
+        };
+      } else if (response.statusCode == 401) {
+        return {
+          'success': false,
+          'message': 'Invalid email or password.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to login. Please try again later.',
+        };
+      }
+    } catch (e) {
+      print("Error: $e");
+      return {
+        'success': false,
+        'message': 'Something went wrong. Please try again later.',
+        'error': e.toString(),
+      };
+    }
   }
-
-
   // Inscription
   Future<Map<String, dynamic>> signUp(String email, String password) async {
     final response = await _sendRequest(
@@ -281,16 +287,44 @@ class AuthService {
   }
 
 
-  // Méthode pour récupérer un utilisateur par email
-  Future<Map<String, dynamic>> getUserByEmail(String email) async {
-    final response = await _sendRequest(
-        'GET',
-        '/auth/getuserbyemail/$email'
-    );
-    if (response['error'] != null) {
-      return {'error': true, 'message': 'Failed to retrieve user'};
+  Future<Map<String, dynamic>> fetchAdminByEmail(String email) async {
+    final String apiUrl = 'http://10.0.2.2:3000/admins/getByEmail/$email'; // Replace with your server URL
+
+    try {
+      // Send a GET request to fetch admin by email
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        // Parse the successful response
+        final Map<String, dynamic> adminData = jsonDecode(response.body);
+        return {
+          'success': true,
+          'admin': adminData, // Admin details
+        };
+      } else if (response.statusCode == 404) {
+        // Admin not found
+        return {
+          'success': false,
+          'message': 'Admin not found. Please check the email.',
+        };
+      } else {
+        // Generic error for other status codes
+        return {
+          'success': false,
+          'message': 'Failed to retrieve admin. Please try again later.',
+        };
+      }
+    } catch (e) {
+      // Handle network or unexpected errors
+      return {
+        'success': false,
+        'message': 'Something went wrong. Please check your connection.',
+        'error': e.toString(),
+      };
     }
-    return {'user': response};
   }
 
 
@@ -357,7 +391,6 @@ class AuthService {
       );
       return response;
     } catch (e) {
-      print('Error during OTP verification: $e');
       rethrow;
     }
   }

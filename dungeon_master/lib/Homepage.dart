@@ -240,7 +240,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   Future<void> _navigateToSettings() async {
     try {
-      final response = await _userService.getUserByEmail(
+      final response = await _userService.fetchAdminByEmail(
           widget.user.value['email']);
       if (response['error'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -262,7 +262,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(
+        const SnackBar(content: Text(
             'Erreur lors de la récupération des données utilisateur.')),
       );
     }
