@@ -1,7 +1,6 @@
-import 'package:dungeon_master/service/auth_service.dart';
 import 'package:flutter/material.dart';
-
 import 'Homepage.dart';
+import 'ProfileDetailPage.dart';
 import 'Settings.dart';
 import 'ShopManagementPage.dart';
 
@@ -16,61 +15,39 @@ class UserManagementPage extends StatefulWidget {
 
 class _UserManagementPageState extends State<UserManagementPage> {
   int _currentIndex = 2;
-  final AuthService _userService = AuthService();
+
   // Example list of users
-  List<Map<String, String>> users = [
+  ValueNotifier<List<Map<String, dynamic>>> users = ValueNotifier([
     {
-      'name': 'John Doe',
-      'email': 'johndoe@example.com',
-      'level': 'Admin',
-      'image': 'assets/user1.jpg', // User image
+      'name': 'Precious',
+      'imageUrl': 'https://via.placeholder.com/150',
+      'joinDate': 'Aug, 2022',
+      'progress': 0.73,
+      'level': 5,
+      'currentXP': 220,
+      'maxXP': 300,
+      'completedSessions': 23,
+      'minutesSpent': 94,
+      'longestStreak': '15 days',
     },
     {
-      'name': 'Jane Smith',
-      'email': 'janesmith@example.com',
-      'level': 'User',
-      'image': 'assets/user2.jpg', // User image
+      'name': 'New User',
+      'imageUrl': 'https://via.placeholder.com/150',
+      'joinDate': 'Dec, 2024',
+      'progress': 0.0,
+      'level': 1,
+      'currentXP': 0,
+      'maxXP': 100,
+      'completedSessions': 0,
+      'minutesSpent': 0,
+      'longestStreak': '0 days',
     },
-    // Add more users here
-  ];
+  ]);
 
   TextEditingController _searchController = TextEditingController();
 
-  // Navigate to the settings page
-  Future<void> _navigateToSettings() async {
-    try {
-      final response = await _userService.getUserByEmail(
-          widget.user.value['email']);
-      if (response['error'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response['message'])),
-        );
-        return;
-      }
-      final user = response['user'];
-
-      final updatedUser = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SettingsPage(user: user),
-        ),
-      );
-
-      if (updatedUser != null) {
-        widget.user.value = updatedUser; // Mettre à jour le ValueNotifier
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(
-            'Erreur lors de la récupération des données utilisateur.')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Accéder aux informations de l'utilisateur passé en paramètre
-    final user = widget.user;
     return Scaffold(
       appBar: AppBar(
         title: Text('User Management'),
@@ -95,34 +72,36 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
           // Displaying the list of users with dynamic search
           Expanded(
-            child: ListView.builder(
-              itemCount: users
-                  .where((user) =>
-                  user['name']!.toLowerCase().contains(_searchController.text.toLowerCase()))
-                  .toList()
-                  .length,
-              itemBuilder: (context, index) {
-                var filteredUsers = users
-                    .where((user) =>
-                    user['name']!.toLowerCase().contains(_searchController.text.toLowerCase()))
+            child: ValueListenableBuilder(
+              valueListenable: users,
+              builder: (context, userList, _) {
+                var filteredUsers = userList
+                    .where((user) => user['name']!
+                    .toLowerCase()
+                    .contains(_searchController.text.toLowerCase()))
                     .toList();
-                return UserCard(
-                  user: filteredUsers[index],
-                  onEdit: () {
-                    // Logic for editing user
-                  },
-                  onDelete: () {
-                    setState(() {
-                      users.remove(filteredUsers[index]);
-                    });
-                  },
-                  onTap: () {
-                    // Logic for navigating to user details
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => UserDetailsPage(user: filteredUsers[index]),
-                      ),
+                return ListView.builder(
+                  itemCount: filteredUsers.length,
+                  itemBuilder: (context, index) {
+                    return UserCard(
+                      user: filteredUsers[index],
+                      onEdit: () {
+                        // Logic for editing user
+                      },
+                      onDelete: () {
+                        setState(() {
+                          users.value.remove(filteredUsers[index]);
+                        });
+                      },
+                      onTap: () {
+                        // Logic for navigating to user details
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProfileDetailPage(user: ValueNotifier(filteredUsers[index])),
+                          ),
+                        );
+                      },
                     );
                   },
                 );
@@ -164,7 +143,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
               ),
             );
           } else if (index == 3) {
-            _navigateToSettings();
+            // Navigate to profile/settings page
           }
         },
         items: [
@@ -189,9 +168,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
   }
 }
-
 class UserCard extends StatelessWidget {
-  final Map<String, String> user;
+  final Map<String, dynamic> user;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onTap;
@@ -211,14 +189,14 @@ class UserCard extends StatelessWidget {
         margin: EdgeInsets.all(8.0),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundImage: AssetImage(user['image']!),
+            backgroundImage: NetworkImage(user['imageUrl']!),
           ),
           title: Text(user['name']!),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(user['email']!, overflow: TextOverflow.ellipsis),
               Text('Level: ${user['level']}'),
+              Text('XP: ${user['currentXP']}/${user['maxXP']}'),
             ],
           ),
           trailing: Row(
@@ -232,12 +210,6 @@ class UserCard extends StatelessWidget {
                 icon: Icon(Icons.delete),
                 onPressed: onDelete, // Delete user
               ),
-              IconButton(
-                icon: Icon(Icons.arrow_forward), // Arrow icon
-                onPressed: () {
-                  onTap(); // Action on arrow tap
-                },
-              ),
             ],
           ),
         ),
@@ -246,32 +218,3 @@ class UserCard extends StatelessWidget {
   }
 }
 
-class UserDetailsPage extends StatelessWidget {
-  final Map<String, String> user;
-
-  const UserDetailsPage({required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('User Details'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: AssetImage(user['image']!),
-            ),
-            SizedBox(height: 20),
-            Text('Name: ${user['name']}'),
-            Text('Email: ${user['email']}'),
-            Text('Level: ${user['level']}'), // Added level here too
-          ],
-        ),
-      ),
-    );
-  }
-}
