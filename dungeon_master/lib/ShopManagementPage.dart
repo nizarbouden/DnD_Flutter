@@ -379,6 +379,290 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
   }
 
 
+  Future<void> _showItemDialog(BuildContext context) async {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController priceController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+    File? _imageFile;
+
+    String nameError = '';
+    String priceError = '';
+    String descriptionError = '';
+    bool nameValid = false;
+    bool priceValid = false;
+    bool descriptionValid = false;
+
+    Future<void> _pickImage() async {
+      final status = await Permission.photos.request();
+      if (status.isGranted) {
+        final XFile? pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+        if (pickedFile != null) {
+          setState(() {
+            _imageFile = File(pickedFile.path);
+          });
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Permission d'accès refusée")),
+        );
+      }
+    }
+
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: const Color(0xFF2C2C2C),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFFE1C699)),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Add New Item',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Champ pour "Item Name"
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: 'Item Name',
+                        labelStyle: const TextStyle(
+                          color: Color(0xFFE1C699),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.label,
+                          color: Color(0xFFE1C699),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: nameValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: nameValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E1E),
+                        errorText: nameError.isNotEmpty ? nameError : null,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                      onChanged: (text) {
+                        setState(() {
+                          nameValid = text.isNotEmpty;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Champ pour "Price"
+                    TextField(
+                      controller: priceController,
+                      decoration: InputDecoration(
+                        labelText: 'Price',
+                        labelStyle: const TextStyle(
+                          color: Color(0xFFE1C699),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.attach_money,
+                          color: Color(0xFFE1C699),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: priceValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: priceValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E1E),
+                        errorText: priceError.isNotEmpty ? priceError : null,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (text) {
+                        setState(() {
+                          priceValid = double.tryParse(text) != null;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Champ pour "Description"
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        labelText: 'Description',
+                        labelStyle: const TextStyle(
+                          color: Color(0xFFE1C699),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: descriptionValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: descriptionValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E1E),
+                        errorText: descriptionError.isNotEmpty ? descriptionError : null,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                      onChanged: (text) {
+                        setState(() {
+                          descriptionValid = text.isNotEmpty;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Section pour importer l'image
+                    _imageFile == null
+                        ? Text(
+                      'No image selected',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: const Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                    )
+                        : Image.file(_imageFile!, height: 100, width: 100),
+                    const SizedBox(height: 16),
+
+                    ElevatedButton(
+                      onPressed: _pickImage, // Appel de la fonction pour choisir une image
+                      child: Text('Pick an Image'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: const Color(0xFFE1C699),
+                        backgroundColor: const Color(0xFF1E1E1E),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Bouton pour ajouter l'item
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        String name = nameController.text.trim();
+                        String price = priceController.text.trim();
+                        String description = descriptionController.text.trim();
+
+                        setState(() {
+                          nameError = '';
+                          priceError = '';
+                          descriptionError = '';
+                        });
+
+                        bool isValid = true;
+
+                        if (name.isEmpty) {
+                          setState(() {
+                            nameError = 'Item name cannot be empty';
+                          });
+                          isValid = false;
+                        }
+
+                        if (price.isEmpty || double.tryParse(price) == null) {
+                          setState(() {
+                            priceError = 'Please enter a valid price';
+                          });
+                          isValid = false;
+                        }
+
+                        if (description.isEmpty) {
+                          setState(() {
+                            descriptionError = 'Description cannot be empty';
+                          });
+                          isValid = false;
+                        }
+
+                        if (_imageFile == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Please select an image')),
+                          );
+                          isValid = false;
+                        }
+
+                        if (isValid) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Item Added: $name')),
+                          );
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      icon: const Icon(Icons.save, color: Color(0xFFE1C699)),
+                      label: const Text(
+                        'Add Item',
+                        style: TextStyle(color: Color(0xFFE1C699)),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E1E1E),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
 
   @override
@@ -390,7 +674,7 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
           IconButton(
             icon: Icon(Icons.add),
             onPressed: () {
-              // Logic for cart
+              _showItemDialog(context);
             },
           ),
         ],

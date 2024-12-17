@@ -5,7 +5,7 @@ import 'Settings.dart';
 import 'ShopManagementPage.dart';
 
 class UserManagementPage extends StatefulWidget {
-  final ValueNotifier<Map<String, dynamic>> user; // Le paramètre utilisateur
+  final ValueNotifier<Map<String, dynamic>> user;
 
   const UserManagementPage({required this.user});
 
@@ -16,61 +16,195 @@ class UserManagementPage extends StatefulWidget {
 class _UserManagementPageState extends State<UserManagementPage> {
   int _currentIndex = 2;
 
-  // Example list of users
-  ValueNotifier<List<Map<String, dynamic>>> users = ValueNotifier([
-    {
-      'name': 'Precious',
-      'imageUrl': 'https://via.placeholder.com/150',
-      'joinDate': 'Aug, 2022',
-      'progress': 0.73,
-      'level': 5,
-      'currentXP': 220,
-      'maxXP': 300,
-      'completedSessions': 23,
-      'minutesSpent': 94,
-      'longestStreak': '15 days',
-    },
-    {
-      'name': 'New User',
-      'imageUrl': 'https://via.placeholder.com/150',
-      'joinDate': 'Dec, 2024',
-      'progress': 0.0,
-      'level': 1,
-      'currentXP': 0,
-      'maxXP': 100,
-      'completedSessions': 0,
-      'minutesSpent': 0,
-      'longestStreak': '0 days',
-    },
-  ]);
+  // Liste initiale des utilisateurs (avant tout filtre ou tri)
+  final List<Map<String, dynamic>> _initialUsers = [
+    for (var i = 1; i <= 25; i++) // Create 25 users for testing pagination
+      {
+        'name': 'User $i',
+        'imageUrl': 'https://via.placeholder.com/150',
+        'progress': (i * 0.1) % 1,
+        'level': i,
+        'currentXP': i * 10,
+        'maxXP': 100,
+        'completedSessions': i * 2,
+        'minutesSpent': i * 10,
+        'longestStreak': '${i} days',
+        'coins': i * 10,
+        'gems': i * 5,
+        'email': 'user$i@example.com',
+        'friends': i % 3 + 1,
+      }
+  ];
+
+  ValueNotifier<List<Map<String, dynamic>>> users = ValueNotifier([]);
 
   TextEditingController _searchController = TextEditingController();
+  String selectedFilter = '';
+  bool isAscendingName = true;
+  bool isAscendingLevel = true;
+
+  int _currentPage = 1;
+  final int _usersPerPage = 10;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialiser les utilisateurs avec la liste d'origine
+    users.value = List.from(_initialUsers);
+  }
+
+  List<Map<String, dynamic>> _getPaginatedUsers(List<Map<String, dynamic>> userList) {
+    int start = (_currentPage - 1) * _usersPerPage;
+    int end = start + _usersPerPage;
+    return userList.sublist(start, end > userList.length ? userList.length : end);
+  }
+
+  void sortByName() {
+    setState(() {
+      isAscendingName = !isAscendingName;
+      selectedFilter = 'name';
+      users.value.sort((a, b) => isAscendingName
+          ? a['name'].compareTo(b['name'])
+          : b['name'].compareTo(a['name']));
+    });
+  }
+
+  void sortByLevel() {
+    setState(() {
+      isAscendingLevel = !isAscendingLevel;
+      selectedFilter = 'level';
+      users.value.sort((a, b) => isAscendingLevel
+          ? a['level'].compareTo(b['level'])
+          : b['level'].compareTo(a['level']));
+    });
+  }
+
+  void clearFilters() {
+    setState(() {
+      selectedFilter = '';
+      _searchController.clear();
+      _currentPage = 1; // Réinitialiser à la première page
+      // Restaurer les utilisateurs à leur état initial
+      users.value = List.from(_initialUsers);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('User Management'),
+        title: TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _currentPage = 1; // Reset to the first page when searching
+            });
+          },
+          decoration: InputDecoration(
+            hintText: 'Search users...',
+            border: InputBorder.none,
+            hintStyle: TextStyle(color: Colors.white54),
+          ),
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.blue,
       ),
       body: Column(
         children: [
-          // Dynamic search bar
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Search',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (value) {
-                setState(() {});
-              },
+          // Filtres horizontaux
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            child: Row(
+              children: [
+                FilterChip(
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Name'),
+                      Icon(
+                        isAscendingName
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                  onSelected: (value) => sortByName(),
+                  selected: selectedFilter == 'name',
+                  selectedColor: Colors.blue.shade200,
+                  backgroundColor: Colors.grey.shade300,
+                ),
+                SizedBox(width: 8),
+                FilterChip(
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Level'),
+                      Icon(
+                        isAscendingLevel
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                  onSelected: (value) => sortByLevel(),
+                  selected: selectedFilter == 'level',
+                  selectedColor: Colors.blue.shade200,
+                  backgroundColor: Colors.grey.shade300,
+                ),
+                SizedBox(width: 8),
+                // Clear Filters Button
+                FilterChip(
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Clear Filters'),
+                      Icon(
+                        Icons.clear_all,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                  onSelected: (value) => clearFilters(),
+                  selected: selectedFilter == '',
+                  selectedColor: Colors.red.shade200,
+                  backgroundColor: Colors.grey.shade300,
+                ),
+              ],
             ),
           ),
-
-          // Displaying the list of users with dynamic search
+          // Pagination controls at the top
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back),
+                onPressed: _currentPage > 1
+                    ? () {
+                  setState(() {
+                    _currentPage--;
+                  });
+                }
+                    : null,
+              ),
+              Text(
+                'Page $_currentPage of ${(users.value.length / _usersPerPage).ceil()}',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: Icon(Icons.arrow_forward),
+                onPressed: _currentPage < (users.value.length / _usersPerPage).ceil()
+                    ? () {
+                  setState(() {
+                    _currentPage++;
+                  });
+                }
+                    : null,
+              ),
+            ],
+          ),
           Expanded(
             child: ValueListenableBuilder(
               valueListenable: users,
@@ -80,25 +214,26 @@ class _UserManagementPageState extends State<UserManagementPage> {
                     .toLowerCase()
                     .contains(_searchController.text.toLowerCase()))
                     .toList();
+
+                var paginatedUsers = _getPaginatedUsers(filteredUsers);
+
                 return ListView.builder(
-                  itemCount: filteredUsers.length,
+                  padding: const EdgeInsets.all(8.0),
+                  itemCount: paginatedUsers.length,
                   itemBuilder: (context, index) {
                     return UserCard(
-                      user: filteredUsers[index],
-                      onEdit: () {
-                        // Logic for editing user
-                      },
+                      user: paginatedUsers[index],
                       onDelete: () {
                         setState(() {
-                          users.value.remove(filteredUsers[index]);
+                          users.value.remove(paginatedUsers[index]);
                         });
                       },
                       onTap: () {
-                        // Logic for navigating to user details
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ProfileDetailPage(user: ValueNotifier(filteredUsers[index])),
+                            builder: (context) => ProfileDetailPage(
+                                user: ValueNotifier(paginatedUsers[index])),
                           ),
                         );
                       },
@@ -168,52 +303,68 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
   }
 }
+
 class UserCard extends StatelessWidget {
   final Map<String, dynamic> user;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final Function onDelete;
   final VoidCallback onTap;
 
   const UserCard({
     required this.user,
-    required this.onEdit,
     required this.onDelete,
     required this.onTap,
   });
 
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Notification'),
+        content: Text('Are you sure you want to delete this user?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(false); // Cancellation
+            },
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(true); // Confirmation
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap, // Action on card tap
-      child: Card(
-        margin: EdgeInsets.all(8.0),
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundImage: NetworkImage(user['imageUrl']!),
-          ),
-          title: Text(user['name']!),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Level: ${user['level']}'),
-              Text('XP: ${user['currentXP']}/${user['maxXP']}'),
-            ],
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min, // Ensures the icons don't overflow
-            children: [
-              IconButton(
-                icon: Icon(Icons.edit),
-                onPressed: onEdit, // Edit user
-              ),
-              IconButton(
-                icon: Icon(Icons.delete),
-                onPressed: onDelete, // Delete user
-              ),
-            ],
-          ),
-        ),
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundImage: NetworkImage(user['imageUrl']!),
+        radius: 30,
       ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(user['name']!, style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(user['email']!, style: TextStyle(color: Colors.grey)),
+          Text('Level: ${user['level']}', style: TextStyle(color: Colors.blue)),
+        ],
+      ),
+      trailing: IconButton(
+        icon: Icon(Icons.delete, color: Colors.red),
+        onPressed: () async {
+          bool confirmed = await _confirmDelete(context);
+          if (confirmed) {
+            onDelete(); // Call the deletion function if confirmed
+          }
+        },
+      ),
+      onTap: onTap,
     );
   }
 }

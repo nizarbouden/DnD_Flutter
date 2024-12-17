@@ -29,7 +29,7 @@ class ProfileDetailPage extends StatelessWidget {
                 ),
                 SizedBox(height: 16),
                 Text(
-                  'Hi, ${userData['name']}',
+                  '${userData['name']}',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -37,7 +37,7 @@ class ProfileDetailPage extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Joined ${userData['joinDate']}',
+                  '${userData['email']}',
                   style: TextStyle(color: Colors.grey),
                 ),
                 SizedBox(height: 16),
@@ -57,29 +57,20 @@ class ProfileDetailPage extends StatelessWidget {
                     ],
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Quote of the day',
-                        style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        '"The time we spend awake is precious, but so is the time we spend asleep."',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'LEBRON JAMES',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _StatCard(label: '${userData['friends']}', description: 'Friends'),
+                          _StatCard(label: '${userData['gems']}', description: 'Gems'),
+                          _StatCard(label: '${userData['coins']}', description: 'Coins'),
+                        ],
                       ),
                     ],
                   ),
                 ),
+
                 SizedBox(height: 16),
 
                 // Barre de progression
@@ -100,7 +91,7 @@ class ProfileDetailPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ZEN MASTER',
+                        'Adventurer Progression',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -126,6 +117,7 @@ class ProfileDetailPage extends StatelessWidget {
                           '${userData['currentXP']}/${userData['maxXP']} to LV ${userData['level']}'),
                     ],
                   ),
+
                 ),
                 SizedBox(height: 16),
 
@@ -157,8 +149,8 @@ class ProfileDetailPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  icon: Icon(Icons.share, color: Colors.white),
-                  label: Text('Share My Stats',
+                  icon: Icon(Icons.edit, color: Colors.white),
+                  label: Text('Edit profile',
                       style: TextStyle(color: Colors.white)),
                 ),
               ],
