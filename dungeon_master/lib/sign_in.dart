@@ -8,6 +8,8 @@ import 'Sign_up.dart';
 
 
 class SignInApp extends StatelessWidget {
+  const SignInApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
