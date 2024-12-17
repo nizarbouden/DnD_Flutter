@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:dungeon_master/service/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'CategoryPage.dart';
 import 'Homepage.dart';
@@ -46,6 +50,7 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
       'newPrice': "\$250.00"
     },
   ];
+
   Future<void> _navigateToSettings() async {
     try {
       final response = await _userService.getUserByEmail(
@@ -75,6 +80,307 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
       );
     }
   }
+
+  Future<void> _showOfferDialog(BuildContext context) async {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController priceController = TextEditingController();
+    final TextEditingController discountController = TextEditingController();
+    File? _imageFile;
+
+    String priceError = '';
+    String discountError = '';
+    String nameError = '';
+    bool nameValid = false;
+    bool priceValid = false;
+    bool discountValid = false;
+
+    Future<void> _pickImage() async {
+      final status = await Permission.photos.request(); // Pour Android 13+
+      if (status.isGranted) {
+        // Permission accordée, ouvrez la galerie
+        final XFile? pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+        if (pickedFile != null) {
+          setState(() {
+            _imageFile = File(pickedFile.path);
+          });
+        }
+      } else {
+        // Permission refusée, affichez un message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Permission d'accès refusée")),
+        );
+      }
+    }
+
+
+
+
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: const Color(0xFF2C2C2C), // Fond sombre
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Bouton "X" pour fermer
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFFE1C699)), // Couleur dorée
+                        onPressed: () {
+                          Navigator.of(context).pop(); // Ferme la pop-up
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Titre
+                    Text(
+                      'Add New Offer',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFE1C699), // Couleur dorée
+                        fontFamily: 'Serif',
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Champ pour "Offer Name"
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: 'Offer Name',
+                        labelStyle: const TextStyle(
+                          color: Color(0xFFE1C699),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.local_offer,
+                          color: Color(0xFFE1C699),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: nameValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: nameValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E1E),
+                        errorText: nameError.isNotEmpty ? nameError : null,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                      onChanged: (text) {
+                        setState(() {
+                          nameValid = text.isNotEmpty;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Champ pour "Discounted Price"
+                    TextField(
+                      controller: priceController,
+                      decoration: InputDecoration(
+                        labelText: 'Discounted Price',
+                        labelStyle: const TextStyle(
+                          color: Color(0xFFE1C699),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.attach_money,
+                          color: Color(0xFFE1C699),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: priceValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: priceValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E1E),
+                        errorText: priceError.isNotEmpty ? priceError : null,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (text) {
+                        setState(() {
+                          priceValid = double.tryParse(text) != null;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Champ pour "Discount Percentage"
+                    TextField(
+                      controller: discountController,
+                      decoration: InputDecoration(
+                        labelText: 'Discount Percentage',
+                        labelStyle: const TextStyle(
+                          color: Color(0xFFE1C699),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.percent,
+                          color: Color(0xFFE1C699),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: discountValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: discountValid ? Colors.green : const Color(0xFFE1C699),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E1E),
+                        errorText: discountError.isNotEmpty ? discountError : null,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (text) {
+                        setState(() {
+                          discountValid = double.tryParse(text) != null;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Section pour importer l'image
+                    _imageFile == null
+                        ? Text(
+                      'No image selected',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: const Color(0xFFE1C699),
+                        fontFamily: 'Serif',
+                      ),
+                    )
+                        : Image.file(_imageFile!, height: 100, width: 100), // Afficher l'image sélectionnée
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _pickImage, // Appel de la fonction pour choisir une image
+                      child: Text('Pick an Image'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: const Color(0xFFE1C699),
+                        backgroundColor: const Color(0xFF1E1E1E),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Bouton pour ajouter l'offre
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        String name = nameController.text.trim();
+                        String price = priceController.text.trim();
+                        String discount = discountController.text.trim();
+
+                        setState(() {
+                          nameError = '';
+                          priceError = '';
+                          discountError = '';
+                        });
+
+                        bool isValid = true;
+
+                        if (name.isEmpty) {
+                          setState(() {
+                            nameError = 'Offer name cannot be empty';
+                          });
+                          isValid = false;
+                        }
+
+                        // Contrôle de saisie sur "Discounted Price" et "Discount Percentage"
+                        if (price.isEmpty || double.tryParse(price) == null) {
+                          setState(() {
+                            priceError = 'Please enter a valid price';
+                          });
+                          isValid = false;
+                        }
+
+                        if (discount.isEmpty || double.tryParse(discount) == null) {
+                          setState(() {
+                            discountError = 'Please enter a valid discount percentage';
+                          });
+                          isValid = false;
+                        }
+
+                        if (_imageFile == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Please select an image')),
+                          );
+                          isValid = false;
+                        }
+
+                        if (isValid) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Offer Added: $name')),
+                          );
+                          Navigator.of(context).pop(); // Fermer la boîte de dialogue
+                        }
+                      },
+                      icon: const Icon(Icons.save, color: Color(0xFFE1C699)),
+                      label: const Text(
+                        'Add Offer',
+                        style: TextStyle(color: Color(0xFFE1C699)),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E1E1E),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,13 +443,15 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
                         SizedBox(height: 8),
                         ElevatedButton(
                           onPressed: () {
-                            // Logic for Shop Now
+                            _showOfferDialog(context); // Passer le BuildContext comme argument
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black.withOpacity(0.7),
                           ),
                           child: Text("ADD NEW OFFER"),
-                        ),
+                        )
+
+
                       ],
                     ),
                   ),
@@ -174,12 +482,7 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
                       ),
                     ],
                   ),
-                  TextButton(
-                    onPressed: () {
-                      // Logic for See All
-                    },
-                    child: Text("See All"),
-                  ),
+
                 ],
               ),
             ),
