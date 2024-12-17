@@ -53,7 +53,7 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
 
   Future<void> _navigateToSettings() async {
     try {
-      final response = await _userService.getUserByEmail(
+      final response = await _userService.fetchAdminByEmail(
           widget.user.value['email']);
       if (response['error'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(

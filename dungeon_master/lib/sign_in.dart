@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'ForgotPasswordScreen.dart';
 import 'Homepage.dart';
-import 'Sign_up.dart';
 
 
 class SignInApp extends StatelessWidget {
@@ -14,10 +13,10 @@ class SignInApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        // Enlever la police personnalisée pour utiliser la police par défaut
-        fontFamily: 'Roboto', // Vous pouvez utiliser une autre police standard ici
-        textTheme: TextTheme(
-          bodyLarge: TextStyle(fontSize: 16), // Style normal sans police spécifique
+
+        fontFamily: 'VecnaBold',
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(fontSize: 16),
           bodyMedium: TextStyle(fontSize: 14),
           displayLarge: TextStyle(fontSize: 32),
           titleLarge: TextStyle(fontSize: 20),
@@ -29,8 +28,6 @@ class SignInApp extends StatelessWidget {
   }
 }
 
-
-
 class SignInScreen extends StatefulWidget {
   @override
   _SignInScreenState createState() => _SignInScreenState();
@@ -40,8 +37,6 @@ class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false; // Pour afficher un indicateur de chargement
-  String _errorMessage = 'error';
 
   bool _isEmailValid = false;
   bool _isPasswordValid = false;
@@ -72,106 +67,118 @@ class _SignInScreenState extends State<SignInScreen> {
       body: Stack(
         children: [
           // Ajout du GIF en arrière-plan
-          Container(
+          SizedBox(
             width: double.infinity,
-            height: double.infinity, // Cette ligne garantit que le Container prend toute la taille
+            height: double.infinity,
             child: Image.asset(
               'assets/auth_bg.gif',
-              fit: BoxFit.cover, // L'image couvre tout l'écran
+              fit: BoxFit.cover,
             ),
           ),
-          SingleChildScrollView( // Ajout de ScrollView
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5), // Black color with 50% transparency
+            ),
+          ),
+          SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 200),
-                  Center(
+                  const SizedBox(height: 150),
+                  const Center(
                     child: Text(
-                      'Sign In',
+                      'Admin Sign In',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
+                        color: Color(0xFFD4CFC4),
+                        fontSize: 40,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'VecnaBold_4yy4',
+                        fontFamily: 'VecnaBold',
                       ),
                     ),
                   ),
-                  SizedBox(height: 50),
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      labelStyle: TextStyle(
-                          color: Colors.white,
-                        fontFamily: 'VecnaBold_4yy4',), // Texte du label en blanc
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white), // Bordure blanche
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white), // Bordure blanche quand l'input est actif
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white), // Bordure blanche quand l'input est focalisé
-                      ),
-                      prefixIcon: Icon(Icons.email, color: Colors.white), // Icône d'enveloppe en blanc
-                      suffixIcon: _isEmailValid
-                          ? Icon(Icons.check, color: Colors.green)
-                          : null,
+                  const SizedBox(height: 50),
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min, // Ensures it takes minimal vertical space
+                      children: [
+                        // Email Field
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.9, // 80% of screen width
+                          child: TextFormField(
+                            controller: _emailController,
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              labelStyle: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'VecnaBold',
+                              ),
+                              enabledBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white), // Bottom border color
+                              ),
+                              focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white, width: 2), // Thicker bottom border on focus
+                              ),
+                              prefixIcon: const Icon(Icons.email, color: Colors.white),
+                              suffixIcon: _isEmailValid
+                                  ? const Icon(Icons.check, color: Colors.green)
+                                  : null,
+                            ),
+                            onChanged: _validateEmail,
+                            style: const TextStyle(color: Colors.white),
+                            validator: (value) {
+                              if (value == null ||
+                                  !RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+                                      .hasMatch(value)) {
+                                return 'Please enter a valid email address.';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Password Field
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.9, // 80% of screen width
+                          child: TextFormField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              labelStyle: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'VecnaBold',
+                              ),
+                              enabledBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white), // Bottom border color
+                              ),
+                              focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white, width: 2), // Thicker bottom border on focus
+                              ),
+                              prefixIcon: const Icon(Icons.lock, color: Colors.white),
+                              suffixIcon: _isPasswordValid
+                                  ? const Icon(Icons.check, color: Colors.green)
+                                  : null,
+                            ),
+                            onChanged: _validatePassword,
+                            style: const TextStyle(color: Colors.white),
+                            validator: (value) {
+                              if (value == null || value.length <= 5) {
+                                return 'Password must be more than 6 characters.';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                    onChanged: _validateEmail,
-                    style: TextStyle(color: Colors.white), // Texte en blanc dans le champ de texte
-                    validator: (value) {
-                      if (value == null || !RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(value)) {
-                        return 'Please enter a valid email address.';
-                      }
-                      return null;
-                    },
                   ),
-
-                  SizedBox(height: 10),
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      labelStyle: TextStyle(color: Colors.white), // Texte du label en blanc
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white), // Bordure blanche
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white), // Bordure blanche quand l'input est actif
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white), // Bordure blanche quand l'input est focalisé
-                      ),
-                      prefixIcon: Icon(Icons.lock, color: Colors.white), // Icône en blanc
-                      suffixIcon: _isPasswordValid
-                          ? Icon(Icons.check, color: Colors.green)
-                          : null,
-                    ),
-                    obscureText: true,
-                    onChanged: _validatePassword,
-                    style: TextStyle(color: Colors.white), // Texte en blanc dans le champ de texte
-                    validator: (value) {
-                      if (value == null || value.length <= 5) {
-                        return 'Password must be more than 6 characters.';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  SizedBox(height: 10),
-
-
-                  SizedBox(height: 20),
+                  const SizedBox(height: 40),
                   Center(
                     child: ElevatedButton(
                       onPressed: () async {
@@ -179,188 +186,66 @@ class _SignInScreenState extends State<SignInScreen> {
                           try {
                             String email = _emailController.text.trim();
                             String password = _passwordController.text.trim();
+                            // Call the login function
+                            final loginResponse = await _authService.login(email, password);
 
-                            final response = await _authService.login(email, password);
-
-                            if (response['error'] == true) {
+                            if (loginResponse['success'] == false) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(response['message'])),
+                                SnackBar(content: Text(loginResponse['message'] ?? 'Invalid credentials')),
                               );
                             } else {
-                              final userResponse = await _authService.getUserByEmail(email);
-                              final user = userResponse['user'];
+                              final admin = loginResponse["admin"];
+                              ValueNotifier<Map<String, dynamic>> userNotifier = ValueNotifier<Map<String, dynamic>>(admin);
 
-                              if (userResponse['error'] == true) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(userResponse['message'])),
-                                );
-                              } else {
-                                // Envelopper les données de l'utilisateur dans un ValueNotifier
-                                ValueNotifier<Map<String, dynamic>> userNotifier = ValueNotifier<Map<String, dynamic>>(user);
-
-                                // Navigation vers la page d'accueil avec le ValueNotifier
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => HomePage(user: userNotifier)),
-                                      (route) => false, // Cette condition efface toute la pile
-                                );
-                              }
+                              // Navigate to the HomePage and clear navigation stack
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(builder: (context) => HomePage(user: userNotifier)),
+                                    (route) => false,
+                              );
                             }
                           } catch (e) {
+                            // Handle any unexpected errors
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Une erreur est survenue. Veuillez réessayer.')),
+                              const SnackBar(content: Text('An error occurred! Please try again later.')),
                             );
                           }
                         }
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7A393D),
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
 
-                      child: Text(
+                      child: const Text(
                         'SIGN IN',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white,
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF7A393D),
-                        minimumSize: Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
                     ),
                   ),
-
-
-                  SizedBox(height: 30), // Espacement entre le bouton "SIGN UP" et la partie en dessous
+                  const SizedBox(height: 20), // Espacement entre le bouton "SIGN UP" et la partie en dessous
                   Center(
                     child: TextButton(
                       onPressed: () { // Navigue vers la page de création de compte (SignUpScreen)
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => SignUpApp()),
+                          MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
                         );
                       },
-                      child: Text(
-                        'Dont  have an account? Sign Up',
+                      child: const Text(
+                        'Forgot Your Password? Recover It',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
+                          color: Color(0xFFC0C0C0),
+                          fontSize: 18,
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 30), // Espacement entre le bouton "SIGN UP" et la partie en dessous
-                  Center(
-                    child: TextButton(
-                      onPressed: () { // Navigue vers la page de création de compte (SignUpScreen)
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
-                        );
-                      },
-                      child: Text(
-                        'Forget Your Password? Recover It',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Center(child: Text('Log in With',
-                      style: TextStyle( color: Colors.white,
-                        fontSize: 20,))),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {},
-                        child: ColorFiltered(
-                          colorFilter: ColorFilter.mode(
-                            Color(0xFFFFA500), // Exemple de teinte noire, vous pouvez ajuster la couleur
-                            BlendMode.srcIn, // Applique la teinte à l'image
-                          ),
-                          child: Image.asset(
-                            'assets/ic_steam.png',
-                            height: 32, // Ajustement de la hauteur
-                            width: 32,  // Ajustement de la largeur
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          shape: CircleBorder(),
-                          backgroundColor: Colors.white,
-                          padding: EdgeInsets.all(12),
-                          elevation: 5,
-                        ),
-                      ),
-
-                      ElevatedButton(
-                        onPressed: () {},
-                        child: ColorFiltered(
-                          colorFilter: ColorFilter.mode(
-                            Color(0xFFFFA500), // Exemple de teinte bleue de Facebook
-                            BlendMode.srcIn, // Applique la teinte à l'image
-                          ),
-                          child: Image.asset(
-                            'assets/ic_fb.png',
-                            height: 32, // Ajustement de la hauteur
-                            width: 32,  // Ajustement de la largeur
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          shape: CircleBorder(),
-                          backgroundColor: Colors.white,
-                          padding: EdgeInsets.all(12),
-                          elevation: 5,
-                        ),
-                      ),
-
-                      ElevatedButton(
-                        onPressed: () {},
-                        child: ColorFiltered(
-                          colorFilter: ColorFilter.mode(
-                            Color(0xFFFFA500), // Teinte orange
-                            BlendMode.srcIn, // Applique la teinte à l'image
-                          ),
-                          child: Image.asset(
-                            'assets/ic_reddit.png',
-                            height: 32, // Ajustement de la hauteur
-                            width: 32,  // Ajustement de la largeur
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          shape: CircleBorder(),
-                          backgroundColor: Colors.white,
-                          padding: EdgeInsets.all(12),
-                          elevation: 5,
-                        ),
-                      ),
-
-                      ElevatedButton(
-                        onPressed: () {},
-                        child: ColorFiltered(
-                          colorFilter: ColorFilter.mode(
-                            Color(0xFFFFA500), // Exemple de teinte bleue
-                            BlendMode.srcIn, // Applique la teinte à l'image
-                          ),
-                          child: Image.asset(
-                            'assets/ic_epic.png',
-                            height: 32, // Ajustement de la hauteur
-                            width: 32,  // Ajustement de la largeur
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          shape: CircleBorder(),
-                          backgroundColor: Colors.white,
-                          padding: EdgeInsets.all(12),
-                          elevation: 5,
-                        ),
-                      ),
-
-                    ],
                   ),
                 ],
               ),
