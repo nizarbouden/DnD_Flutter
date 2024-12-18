@@ -104,12 +104,12 @@ class _CategoryPageState extends State<CategoryPage> {
       appBar: AppBar(
         title: TextField(
           onChanged: updateSearchQuery,
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             hintText: 'Search products...',
             border: InputBorder.none,
             hintStyle: TextStyle(color: Colors.white54),
           ),
-          style: TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.blue,
       ),
@@ -118,14 +118,14 @@ class _CategoryPageState extends State<CategoryPage> {
           // Filtres horizontaux
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
             child: Row(
               children: [
                 FilterChip(
                   label: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Price'),
+                      const Text('Price'),
                       Icon(
                         isAscendingPrice
                             ? Icons.arrow_upward
@@ -139,12 +139,12 @@ class _CategoryPageState extends State<CategoryPage> {
                   selectedColor: Colors.blue.shade200,
                   backgroundColor: Colors.grey.shade300,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 FilterChip(
                   label: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Level'),
+                      const Text('Level'),
                       Icon(
                         isAscendingLevel
                             ? Icons.arrow_upward
@@ -163,7 +163,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   label: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Name'),
+                      const Text('Name'),
                       Icon(
                         isAscendingName
                             ? Icons.arrow_upward

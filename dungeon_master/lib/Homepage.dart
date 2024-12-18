@@ -1,4 +1,7 @@
 import 'package:dungeon_master/service/auth_service.dart';
+import 'package:dungeon_master/service/equip_service.dart';
+import 'package:dungeon_master/service/gm_service.dart';
+import 'package:dungeon_master/service/icon_service.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart'; // Ajouter cette dépendance
 import 'NotificationsPage.dart';
@@ -18,7 +21,15 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final AuthService _userService = AuthService();
+  final EquipService _eqpService = EquipService();
+  final IconService _icService = IconService();
+  final GmService _gmService = GmService();
   int totalPlayers = 0;
+  int totalEquipments = 0;
+  int totalIcons = 0;
+  int totalgms = 0;
+  int onlinePlayers = 0;
+  int offlinePlayers = 0;
   int _currentIndex = 0;
 
   @override
@@ -27,6 +38,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
     fetchTotalPlayers();
+    fetchTotalEquipments();
+    fetchTotalIcons();
+    fetchGamemodes();
   }
 
   @override
@@ -42,15 +56,61 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Future<void> fetchTotalPlayers() async {
     try {
       final users = await _userService.fetchUsers();
-      if (users != null && users is List) {
-        setState(() {
-          totalPlayers = users.length;
-        });
-      } else {
-        throw Exception('Invalid response format');
+      int onlineCount = 0;
+      int offlineCount = 0;
+
+      // Count online and offline players
+      for (var user in users) {
+        if (user['isOnline'] == true) {
+          onlineCount++;
+        } else {
+          offlineCount++;
+        }
       }
-    } catch (e) {
+      setState(() {
+        totalPlayers = users.length;
+        onlinePlayers  = onlineCount;
+        offlinePlayers = offlineCount;
+
+      });
+        } catch (e) {
       print('Error fetching players: $e');
+    }
+  }
+
+  Future<void> fetchTotalEquipments() async {
+    try {
+      final eqps = await _eqpService.fetchEqps();
+      setState(() {
+        totalEquipments = eqps.length;
+
+      });
+        } catch (e) {
+      print('Error fetching players: $e');
+    }
+  }
+
+  Future<void> fetchTotalIcons() async {
+    try {
+      final icons = await _icService.fetchIcons();
+      setState(() {
+        totalIcons = icons.length;
+
+      });
+        } catch (e) {
+      print('Error fetching icons: $e');
+    }
+  }
+
+  Future<void> fetchGamemodes() async {
+    try {
+      final gms = await _gmService.fethcGms();
+      setState(() {
+        totalgms = gms.length;
+
+      });
+    } catch (e) {
+      print('Error fetching icons: $e');
     }
   }
 
@@ -58,10 +118,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dashboard'),
+        title: const Text('Dashboard',style: TextStyle(
+          color: Color(0xFFD4CFC4), // Set text color to white
+          fontSize: 20,        // Increase the font size
+          fontWeight: FontWeight.bold, // Optional: Make it bold
+        ),),
+        backgroundColor: const Color(0xFF502722),
         actions: [
           IconButton(
-            icon: Icon(Icons.notifications),
+            icon: const Icon(Icons.notifications),
+            color: const Color(0xFFD4CFC4),
             onPressed: () {
               Navigator.push(
                 context,
@@ -73,71 +139,191 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Section des statistiques
-              GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                children: [
-                  _buildStatCard('Items', '124', Icons.inventory, Colors.blue),
-                  _buildStatCard('Players', '298', Icons.group, Colors.green),
-                  _buildStatCard('Events', '3', Icons.event, Colors.purple),
-                  _buildStatCard('Game Mode', '4', Icons.sports_esports, Colors.orange),
-
-                ],
-              ),
-              SizedBox(height: 20),
-              // Section du graphique
-              Text(
-                'Jobs Analytics',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              AspectRatio(
-                aspectRatio: 1.7,
-                child: BarChart(
-                  BarChartData(
-                    barGroups: _createSampleData(),
-                    titlesData: FlTitlesData(
-                      leftTitles: SideTitles(showTitles: true),
-                      bottomTitles: SideTitles(
-                        showTitles: true,
-                        getTitles: (value) {
-                          const titles = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
-                          return titles[value.toInt()] ?? '';
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-
-            ],
+      body: Stack(
+        children: [
+          // Background Image
+          Positioned.fill(
+            child: Image.asset(
+              'assets/bg_dash.webp', // Path to your background image
+              fit: BoxFit.cover,       // Ensures the image fills the space
+            ),
           ),
+          // Foreground Content
+          SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Section des statistiques
+                  GridView.count(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      _buildStatCard(
+                        'Equipments',
+                        totalEquipments.toString(),
+                        'assets/eqp.png',
+                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => ShopManagementPage(user: widget.user,))),
+                      ),
+                      _buildStatCard(
+                        'Players',
+                        totalPlayers.toString(),
+                        'assets/items.png',
+                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => UserManagementPage(user: widget.user,))),
+                      ),
+                      _buildStatCard(
+                        'Icons',
+                        totalIcons.toString(),
+                        'assets/icc.png',
+                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => ShopManagementPage(user: widget.user,))),
+                      ),
+                      _buildStatCard(
+                        'Game Mode(s)',
+                        totalgms.toString(),
+                        'assets/gamemodes.png',
+                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => ShopManagementPage(user: widget.user,))),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Section du graphique
+    Card(
+    elevation: 6, // Add elevation for shadow effect
+    shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(12), // Rounded corners
+    ),
+    child: Stack(
+    children: [
+    // Background Image
+    Positioned.fill(
+    child: ClipRRect(
+    borderRadius: BorderRadius.circular(12), // Match card's rounded corners
+    child: Image.asset(
+    'assets/bg_friends.webp', // Replace with your image path
+    fit: BoxFit.cover,    // Ensures image covers the entire card
+    color: Colors.black.withOpacity(0.3), // Optional: Darken the image
+    colorBlendMode: BlendMode.darken,
+    ),
+    ),
+    ),
+    // Foreground Content
+    Padding(
+    padding: const EdgeInsets.all(16.0), // Padding for spacing inside the card
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    // Title
+      Text(
+        'Online Vs Offline Players (Total: $totalPlayers)',
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFFD4CFC4), // Text color for better visibility
         ),
       ),
+
+      const SizedBox(height: 20),
+    // Pie Chart
+    AspectRatio(
+    aspectRatio: 1.6,
+    child: Card(
+    elevation: 0,
+    color: Colors.transparent,
+    shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(12),
+    ),
+    child: Stack(
+    children: [
+    // Pie Chart Content
+    Center(
+    child: PieChart(
+    PieChartData(
+    sections: _generatePieSections(online: onlinePlayers, offline: offlinePlayers),
+    borderData: FlBorderData(show: false),
+    centerSpaceRadius: 40, // Space in center for aesthetics
+    sectionsSpace: 4, // Space between sections
+    ),
+    ),
+    ),
+    ],
+    ),
+    ),
+    ),
+    const SizedBox(height: 16), // Spacing between chart and legend
+    // Legend Section
+    const Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+    // Online Players Legend
+    Row(
+    children: [
+    Icon(Icons.circle, color: Color(0xFF7A393D), size: 16), // Red Circle
+    SizedBox(width: 8),
+    Text(
+    'Online Players',
+    style: TextStyle(
+    color: Colors.white,
+    fontSize: 14,
+    ),
+    ),
+    ],
+    ),
+    SizedBox(width: 20), // Space between legends
+    // Offline Players Legend
+    Row(
+    children: [
+    Icon(Icons.circle, color: Color(0xFFD4CFC4), size: 16), // White Circle
+    SizedBox(width: 8),
+    Text(
+    'Offline Players',
+    style: TextStyle(
+    color: Colors.white,
+    fontSize: 14,
+    ),
+    ),
+    ],
+    ),
+    ],
+    ),
+    ],
+    ),
+    ),
+    ],
+    ),
+    ),
+
+    ],
+              ),
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Color(0xFF7A393D), // Deep red background for medieval feel
         currentIndex: _currentIndex,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: Color(0xFFD4CFC4), // Slightly off-white for selected item
+        unselectedItemColor: Colors.white70, // Soft white for unselected items
+        selectedLabelStyle: const TextStyle(
+          fontFamily: 'VecnaBold', // Fantasy-inspired font
+          fontWeight: FontWeight.bold,
+          fontSize: 17,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontFamily: 'VecnaBold',
+          fontSize: 15,
+        ),
+        type: BottomNavigationBarType.fixed, // Ensures all items are visible
         onTap: (index) {
-          // Ne rien faire si l'onglet actuel est déjà sélectionné
           if (index == _currentIndex) return;
 
           setState(() {
-            _currentIndex = index; // Mettre à jour l'index actif
+            _currentIndex = index;
           });
 
-          // Gérer la navigation en fonction de l'index
           if (index == 0) {
             Navigator.pushReplacement(
               context,
@@ -163,55 +349,116 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             _navigateToSettings();
           }
         },
-        items: [
+        items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: ImageIcon(
+              AssetImage('assets/homeicnav.png'), // Replace with your custom sword icon
+              size: 20,
+              color: Color(0xFFD4CFC4),
+            ),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.store),
+            icon: ImageIcon(
+              AssetImage('assets/shopnav.png'), // Replace with a medieval store icon
+              size: 30,
+            ),
             label: 'Shop',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.group),
+            icon: ImageIcon(
+              AssetImage('assets/playersnav.png'), // Replace with a players or adventurers icon
+              size: 30,
+            ),
             label: 'Players',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: ImageIcon(
+              AssetImage('assets/profilenav.png'), // Replace with a shield or profile icon
+              size: 25,
+            ),
             label: 'Profile',
           ),
         ],
       ),
 
+
     );
   }
 
-  // Carte de statistiques
-  Widget _buildStatCard(String title, String count, IconData icon, Color color) {
+  Widget _buildStatCard(String title, String count, String imagePath, VoidCallback onPressed) {
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: color),
-            SizedBox(height: 10),
-            Text(
-              count,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+      elevation: 6, // Add prominent elevation for depth
+      shadowColor: Colors.black26, // Subtle shadow
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12), // Consistent rounded corners
+      ),
+      child: Stack(
+        children: [
+          // Background Image
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                'assets/bg_friends.webp', // Background image path
+                fit: BoxFit.cover, // Cover the entire card
+                color: Colors.black.withOpacity(0.3), // Optional: Add a dark overlay
+                colorBlendMode: BlendMode.darken, // Blend to darken the image
+              ),
             ),
-            SizedBox(height: 5),
-            Text(
-              title,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+          // Foreground Content
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(5.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Custom Image/Icon
+                  Image.asset(
+                    imagePath, // Custom image path for icons
+                    height: 50,
+                    width: 50,
+                  ),
+                  const SizedBox(height: 5),
+                  // Count Text
+                  Text(
+                    count,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFD4CFC4), // Visible on the darkened background
+                    ),
+                  ),
+                  // Title Text
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFFD4CFC4), // Softer white for the subtitle
+                    ),
+                  ),
+                  // Navigation Button
+                  IconButton(
+                    onPressed: onPressed,
+                    icon: const Icon(
+                      Icons.info_outline, // Info icon
+                      color: Color(0xFF7A393D), // Icon color
+                      size: 28, // Adjust size if needed
+                    ),
+                    tooltip: 'More Details', // Tooltip for accessibility
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+
+
+
 
   // Données échantillons pour le graphique
   List<BarChartGroupData> _createSampleData() {
@@ -266,5 +513,33 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             'Erreur lors de la récupération des données utilisateur.')),
       );
     }
+  }
+  // Function to Generate PieChart Sections
+  List<PieChartSectionData> _generatePieSections({required int online, required int offline}) {
+    final total = online + offline;
+    return [
+      PieChartSectionData(
+        color: const Color(0xFF7A393D), // D&D Red for online players
+        value: online.toDouble(),
+        title: '${((online / total) * 100).toStringAsFixed(1)}%',
+        radius: 60,
+        titleStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      PieChartSectionData(
+        color: const Color(0xFFD4CFC4), // Light D&D Beige for offline players
+        value: offline.toDouble(),
+        title: '${((offline / total) * 100).toStringAsFixed(1)}%',
+        radius: 60,
+        titleStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+      ),
+    ];
   }
 }

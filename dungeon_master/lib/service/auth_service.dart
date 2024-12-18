@@ -51,24 +51,89 @@ class AuthService {
   }
 
   Future<List<Map<String, dynamic>>> fetchUsers() async {
-    final uri = Uri.parse('$baseUrl/auth/findAll'); // Assurez-vous que l'endpoint est correct
+    final uri = Uri.parse('$baseUrl/auth/getallplayers'); // Assurez-vous que l'endpoint est correct
 
     try {
       final response = await http.get(uri, headers: {'Content-Type': 'application/json'});
-
+      print("hello?.");
       if (response.statusCode == 200 || response.statusCode == 201) {
+        print("hello?...");
         // Vérifiez que la réponse est une liste
         final List<dynamic> jsonData = json.decode(response.body);
 
         // Convertissez chaque élément de la liste en Map<String, dynamic>
         return List<Map<String, dynamic>>.from(jsonData.map((item) => item as Map<String, dynamic>));
       } else {
+        print("hello?.q");
         throw Exception('Failed to load users: ${response.body}');
       }
     } catch (e) {
       return [];
     }
   }
+  Future<void> updateUser(
+      String userId,
+      Map<String, dynamic> updatedUserData, {
+        bool resetPassword = false,
+      }) async {
+    try {
+      print(updatedUserData);
+
+      // Define allowed keys based on your UpdateUserDto
+      final allowedKeys = ['name', 'email', 'level', 'coins', 'gems', 'xp'];
+
+      // Filter updatedUserData to only include allowed keys
+      final filteredUserData = Map<String, dynamic>.fromEntries(
+        updatedUserData.entries.where((entry) => allowedKeys.contains(entry.key)),
+      );
+
+      // Prepare the URL with query parameter for resetPassword
+      final Uri url = Uri.parse(
+        '$baseUrl/auth/$userId?resetPassword=$resetPassword',
+      );
+      print(url);
+      // Send the PATCH request with the filtered data
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(filteredUserData), // Send the filtered data in the body
+      );
+
+      // Handle the response
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('User details updated successfully');
+      } else {
+        throw Exception('Failed to update user details');
+      }
+    } catch (error) {
+      print('Error updating user: $error');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteUser(String userId) async {
+    try {
+      // Prepare the URL for the DELETE request
+      final Uri url = Uri.parse('$baseUrl/auth/$userId');
+      print(url);
+      // Send the DELETE request to delete the user
+      final response = await http.delete(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      // Handle the response
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('User deleted successfully');
+      } else {
+        throw Exception('Failed to delete user');
+      }
+    } catch (error) {
+      print('Error deleting user: $error');
+      rethrow;
+    }
+  }
+
 
   Future<Map<String, dynamic>> updateAvatar(String userId, String newAvatarUrl) async {
     try {

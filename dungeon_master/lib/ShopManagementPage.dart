@@ -1,20 +1,16 @@
-import 'dart:io';
+
 
 import 'package:dungeon_master/service/auth_service.dart';
+import 'package:dungeon_master/service/shop_service.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
-
-import 'CategoryPage.dart';
 import 'Homepage.dart';
-import 'Settings.dart';
 import 'UserManagementPage.dart';
 import 'ItemDetailPage.dart';
 
 class ShopManagementPage extends StatefulWidget {
   final ValueNotifier<Map<String, dynamic>> user;
 
-  ShopManagementPage({required this.user});
+  const ShopManagementPage({super.key, required this.user});
 
   @override
   _ShopManagementPageState createState() => _ShopManagementPageState();
@@ -23,6 +19,9 @@ class ShopManagementPage extends StatefulWidget {
 class _ShopManagementPageState extends State<ShopManagementPage> {
   int _currentIndex = 1; // Set the default index to 1 for ShopManagementPage
   final AuthService _userService = AuthService();
+  final ShopService _shopService = ShopService();
+  int totalPacks = 0;
+  List<Map<String, dynamic>> packs = [];
   // List of products for ShopManagementPage
   final List<Map<String, String>> products = [
     {
@@ -50,853 +49,263 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
       'newPrice': "\$250.00"
     },
   ];
-
-  Future<void> _navigateToSettings() async {
-    try {
-      final response = await _userService.fetchAdminByEmail(
-          widget.user.value['email']);
-      if (response['error'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response['message'])),
-        );
-        return;
-      }
-      final user = response['user'];
-
-      final updatedUser = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SettingsPage(user: user),
-        ),
-      );
-
-      if (updatedUser != null) {
-        widget.user.value = updatedUser; // Mettre à jour le ValueNotifier
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(
-            'Erreur lors de la récupération des données utilisateur.')),
-      );
-    }
+  @override
+  void initState() {
+    super.initState();
+    fetchBasicShop();
   }
-
-  Future<void> _showOfferDialog(BuildContext context) async {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController priceController = TextEditingController();
-    final TextEditingController discountController = TextEditingController();
-    File? _imageFile;
-
-    String priceError = '';
-    String discountError = '';
-    String nameError = '';
-    bool nameValid = false;
-    bool priceValid = false;
-    bool discountValid = false;
-
-    Future<void> _pickImage() async {
-      final status = await Permission.photos.request(); // Pour Android 13+
-      if (status.isGranted) {
-        // Permission accordée, ouvrez la galerie
-        final XFile? pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-        if (pickedFile != null) {
-          setState(() {
-            _imageFile = File(pickedFile.path);
-          });
-        }
-      } else {
-        // Permission refusée, affichez un message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Permission d'accès refusée")),
-        );
-      }
-    }
-
-
-
-
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: const Color(0xFF2C2C2C), // Fond sombre
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Bouton "X" pour fermer
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Color(0xFFE1C699)), // Couleur dorée
-                        onPressed: () {
-                          Navigator.of(context).pop(); // Ferme la pop-up
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Titre
-                    Text(
-                      'Add New Offer',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFE1C699), // Couleur dorée
-                        fontFamily: 'Serif',
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Champ pour "Offer Name"
-                    TextField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Offer Name',
-                        labelStyle: const TextStyle(
-                          color: Color(0xFFE1C699),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.local_offer,
-                          color: Color(0xFFE1C699),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: nameValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: nameValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E1E),
-                        errorText: nameError.isNotEmpty ? nameError : null,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFFE1C699),
-                        fontFamily: 'Serif',
-                      ),
-                      onChanged: (text) {
-                        setState(() {
-                          nameValid = text.isNotEmpty;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Champ pour "Discounted Price"
-                    TextField(
-                      controller: priceController,
-                      decoration: InputDecoration(
-                        labelText: 'Discounted Price',
-                        labelStyle: const TextStyle(
-                          color: Color(0xFFE1C699),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.attach_money,
-                          color: Color(0xFFE1C699),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: priceValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: priceValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E1E),
-                        errorText: priceError.isNotEmpty ? priceError : null,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFFE1C699),
-                        fontFamily: 'Serif',
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (text) {
-                        setState(() {
-                          priceValid = double.tryParse(text) != null;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Champ pour "Discount Percentage"
-                    TextField(
-                      controller: discountController,
-                      decoration: InputDecoration(
-                        labelText: 'Discount Percentage',
-                        labelStyle: const TextStyle(
-                          color: Color(0xFFE1C699),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.percent,
-                          color: Color(0xFFE1C699),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: discountValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: discountValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E1E),
-                        errorText: discountError.isNotEmpty ? discountError : null,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFFE1C699),
-                        fontFamily: 'Serif',
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (text) {
-                        setState(() {
-                          discountValid = double.tryParse(text) != null;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Section pour importer l'image
-                    _imageFile == null
-                        ? Text(
-                      'No image selected',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: const Color(0xFFE1C699),
-                        fontFamily: 'Serif',
-                      ),
-                    )
-                        : Image.file(_imageFile!, height: 100, width: 100), // Afficher l'image sélectionnée
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _pickImage, // Appel de la fonction pour choisir une image
-                      child: Text('Pick an Image'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: const Color(0xFFE1C699),
-                        backgroundColor: const Color(0xFF1E1E1E),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Bouton pour ajouter l'offre
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        String name = nameController.text.trim();
-                        String price = priceController.text.trim();
-                        String discount = discountController.text.trim();
-
-                        setState(() {
-                          nameError = '';
-                          priceError = '';
-                          discountError = '';
-                        });
-
-                        bool isValid = true;
-
-                        if (name.isEmpty) {
-                          setState(() {
-                            nameError = 'Offer name cannot be empty';
-                          });
-                          isValid = false;
-                        }
-
-                        // Contrôle de saisie sur "Discounted Price" et "Discount Percentage"
-                        if (price.isEmpty || double.tryParse(price) == null) {
-                          setState(() {
-                            priceError = 'Please enter a valid price';
-                          });
-                          isValid = false;
-                        }
-
-                        if (discount.isEmpty || double.tryParse(discount) == null) {
-                          setState(() {
-                            discountError = 'Please enter a valid discount percentage';
-                          });
-                          isValid = false;
-                        }
-
-                        if (_imageFile == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Please select an image')),
-                          );
-                          isValid = false;
-                        }
-
-                        if (isValid) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Offer Added: $name')),
-                          );
-                          Navigator.of(context).pop(); // Fermer la boîte de dialogue
-                        }
-                      },
-                      icon: const Icon(Icons.save, color: Color(0xFFE1C699)),
-                      label: const Text(
-                        'Add Offer',
-                        style: TextStyle(color: Color(0xFFE1C699)),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E1E1E),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-
-  Future<void> _showItemDialog(BuildContext context) async {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController priceController = TextEditingController();
-    final TextEditingController descriptionController = TextEditingController();
-    File? _imageFile;
-
-    String nameError = '';
-    String priceError = '';
-    String descriptionError = '';
-    bool nameValid = false;
-    bool priceValid = false;
-    bool descriptionValid = false;
-
-    Future<void> _pickImage() async {
-      final status = await Permission.photos.request();
-      if (status.isGranted) {
-        final XFile? pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-        if (pickedFile != null) {
-          setState(() {
-            _imageFile = File(pickedFile.path);
-          });
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Permission d'accès refusée")),
-        );
-      }
-    }
-
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: const Color(0xFF2C2C2C),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Color(0xFFE1C699)),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Add New Item',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFE1C699),
-                        fontFamily: 'Serif',
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Champ pour "Item Name"
-                    TextField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Item Name',
-                        labelStyle: const TextStyle(
-                          color: Color(0xFFE1C699),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.label,
-                          color: Color(0xFFE1C699),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: nameValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: nameValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E1E),
-                        errorText: nameError.isNotEmpty ? nameError : null,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFFE1C699),
-                        fontFamily: 'Serif',
-                      ),
-                      onChanged: (text) {
-                        setState(() {
-                          nameValid = text.isNotEmpty;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Champ pour "Price"
-                    TextField(
-                      controller: priceController,
-                      decoration: InputDecoration(
-                        labelText: 'Price',
-                        labelStyle: const TextStyle(
-                          color: Color(0xFFE1C699),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.attach_money,
-                          color: Color(0xFFE1C699),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: priceValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: priceValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E1E),
-                        errorText: priceError.isNotEmpty ? priceError : null,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFFE1C699),
-                        fontFamily: 'Serif',
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (text) {
-                        setState(() {
-                          priceValid = double.tryParse(text) != null;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Champ pour "Description"
-                    TextField(
-                      controller: descriptionController,
-                      maxLines: 4,
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                        labelStyle: const TextStyle(
-                          color: Color(0xFFE1C699),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: descriptionValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: descriptionValid ? Colors.green : const Color(0xFFE1C699),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E1E),
-                        errorText: descriptionError.isNotEmpty ? descriptionError : null,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFFE1C699),
-                        fontFamily: 'Serif',
-                      ),
-                      onChanged: (text) {
-                        setState(() {
-                          descriptionValid = text.isNotEmpty;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Section pour importer l'image
-                    _imageFile == null
-                        ? Text(
-                      'No image selected',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: const Color(0xFFE1C699),
-                        fontFamily: 'Serif',
-                      ),
-                    )
-                        : Image.file(_imageFile!, height: 100, width: 100),
-                    const SizedBox(height: 16),
-
-                    ElevatedButton(
-                      onPressed: _pickImage, // Appel de la fonction pour choisir une image
-                      child: Text('Pick an Image'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: const Color(0xFFE1C699),
-                        backgroundColor: const Color(0xFF1E1E1E),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Bouton pour ajouter l'item
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        String name = nameController.text.trim();
-                        String price = priceController.text.trim();
-                        String description = descriptionController.text.trim();
-
-                        setState(() {
-                          nameError = '';
-                          priceError = '';
-                          descriptionError = '';
-                        });
-
-                        bool isValid = true;
-
-                        if (name.isEmpty) {
-                          setState(() {
-                            nameError = 'Item name cannot be empty';
-                          });
-                          isValid = false;
-                        }
-
-                        if (price.isEmpty || double.tryParse(price) == null) {
-                          setState(() {
-                            priceError = 'Please enter a valid price';
-                          });
-                          isValid = false;
-                        }
-
-                        if (description.isEmpty) {
-                          setState(() {
-                            descriptionError = 'Description cannot be empty';
-                          });
-                          isValid = false;
-                        }
-
-                        if (_imageFile == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Please select an image')),
-                          );
-                          isValid = false;
-                        }
-
-                        if (isValid) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Item Added: $name')),
-                          );
-                          Navigator.of(context).pop();
-                        }
-                      },
-                      icon: const Icon(Icons.save, color: Color(0xFFE1C699)),
-                      label: const Text(
-                        'Add Item',
-                        style: TextStyle(color: Color(0xFFE1C699)),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E1E1E),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Shop Management"),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () {
-              _showItemDialog(context);
-            },
+        backgroundColor: const Color(0xFF502722),
+        title: const Text(
+          "Shop Management",
+          style: TextStyle(
+            color: Color(0xFFD4CFC4),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
-        ],
+        ),
+        actions: const [],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Banner Section
-            Container(
-              margin: EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.grey.shade200,
-              ),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      'assets/gems3.png', // Replace with your image
-                      width: double.infinity,
-                      height: 180,
-                      fit: BoxFit.cover,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/bg_dash.webp'), // Your background image
+            fit: BoxFit.cover, // Makes the image cover the entire screen
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Categories Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.9, // 80% of screen width
+                    decoration: BoxDecoration(
+                      image: const DecorationImage(
+                        image: AssetImage('assets/bg_friends.webp'), // Your background image
+                        fit: BoxFit.cover,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                  Positioned(
-                    left: 20,
-                    top: 20,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Padding inside the container
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center, // Center the text
                       children: [
-                        Text(
-                          "NEW OFFER",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        // Text for "Shop - Gems"
+                         Expanded( // Ensures the text takes up space on the left
+                          child: Text(
+                            "Packs (Total: $totalPacks)", // This will dynamically show the totalPacks variable
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 25,
+                              color: Colors.black, // Black text color
+                            ),
+                            textAlign: TextAlign.center, // Ensures the text stays centered
                           ),
                         ),
-                        SizedBox(height: 8),
-                        Text(
-                          "20% OFF",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                        // Add New Coins Button
+                        IconButton(
+                          icon: Container(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF8B0000), // Red background
+                              shape: BoxShape.circle, // Make it circular
+                            ),
+                            padding: const EdgeInsets.all(8.0),
+                            child: const Icon(
+                              Icons.add, // The add icon
+                              color: Colors.white, // White icon color
+                              size: 20,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 8),
-                        ElevatedButton(
                           onPressed: () {
-                            _showOfferDialog(context); // Passer le BuildContext comme argument
+                            // Logic to add new coins
+                            print("Add new coins button pressed");
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black.withOpacity(0.7),
-                          ),
-                          child: Text("ADD NEW OFFER"),
-                        )
-
-
+                        ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-
-
-
-            // Categories Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row( // Row pour aligner "Items" et "(89)" côte à côte
-                    children: [
-                      Text(
-                        "Categorys",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+              SizedBox(
+                height: 280,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: packs.length,
+                  itemBuilder: (context, index) {
+                    return _buildProductCard(
+                      "Pack #$index",
+                      packs[index]['images']!,
+                      packs[index]['price'].toString(),
+                      packs[index]['quantity'].toString(),
+                      packs[index],
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.9, // 80% of screen width
+                    decoration: BoxDecoration(
+                      image: const DecorationImage(
+                        image: AssetImage('assets/bg_friends.webp'), // Your background image
+                        fit: BoxFit.cover,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Padding inside the container
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center, // Center the text
+                      children: [
+                        // Text for "Shop - Gems"
+                        const Expanded( // Ensures the text takes up space on the left
+                          child: Text(
+                            "Shop - Coins",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 25,
+                              color: Colors.black, // Black text color
+                            ),
+                            textAlign: TextAlign.center, // Ensures the text stays centered
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 4), // Optionnel : petit espacement entre "Items" et "(89)"
-                      Text(
-                        "(9)",
-                      ),
-                    ],
-                  ),
-
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 100,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _buildCategoryItem("Icon", "assets/avataricon1.webp",
-                        () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryPage(),
-                    ),),),
-                  SizedBox(width: 16),
-                  _buildCategoryItem("Weapon", "assets/weap3.png",
-                        () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryPage(),
-                      ),
-                    ),),
-                  SizedBox(width: 16),
-                  _buildCategoryItem("Helmet", "assets/head1.webp",
-                        () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryPage(),
-                      ),),),
-                  SizedBox(width: 16),
-                  _buildCategoryItem("Body", "assets/body1.webp",
-                        () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryPage(),
-                      ),),),
-                  SizedBox(width: 16),
-                  _buildCategoryItem("Legs", "assets/leg1.webp",
-                        () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryPage(),
-                      ),),),
-                  SizedBox(width: 16),
-                  _buildCategoryItem("Artifact", "assets/artifact1.webp",
-                        () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryPage(),
-                      ),),),
-                  SizedBox(width: 16),
-                  _buildCategoryItem("Ring", "assets/ring1.png",
-                        () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryPage(),
-                      ),),),
-                  SizedBox(width: 16),
-                  _buildCategoryItem("Gold", "assets/coin_ic.png",
-                        () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryPage(),
-                      ),),),
-                  SizedBox(width: 16),
-                  _buildCategoryItem("Gems", "assets/gem_ic.png",
-                        () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryPage(),
-                      ),),),
-                ],
-              ),
-            ),
-
-            // Curated For You Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row( // Row pour aligner "Items" et "(89)" côte à côte
-                    children: [
-                      Text(
-                        "Items",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                        // Add New Coins Button
+                        IconButton(
+                          icon: Container(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF8B0000), // Red background
+                              shape: BoxShape.circle, // Make it circular
+                            ),
+                            padding: const EdgeInsets.all(8.0),
+                            child: const Icon(
+                              Icons.add, // The add icon
+                              color: Colors.white, // White icon color
+                              size: 20,
+                            ),
+                          ),
+                          onPressed: () {
+                            // Logic to add new coins
+                            print("Add new coins button pressed");
+                          },
                         ),
-                      ),
-                      SizedBox(width: 4), // Optionnel : petit espacement entre "Items" et "(89)"
-                      Text(
-                        "(89)",
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  TextButton(
-                    onPressed: () {
-                      // Logic for See All
-                    },
-                    child: Text("See All"),
+                ),
+              ),
+              /*SizedBox(
+                height: 250,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    return _buildProductCard(
+                      products[index]['title']!,
+                      products[index]['image']!,
+                      products[index]['oldPrice']!,
+                      products[index]['newPrice']!,
+                    );
+                  },
+                ),
+              ),*/
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.9, // 80% of screen width
+                    decoration: BoxDecoration(
+                      image: const DecorationImage(
+                        image: AssetImage('assets/bg_friends.webp'), // Your background image
+                        fit: BoxFit.cover,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Padding inside the container
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center, // Center the text
+                      children: [
+                        // Text for "Shop - Gems"
+                        const Expanded( // Ensures the text takes up space on the left
+                          child: Text(
+                            "Shop - Gems",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 25,
+                              color: Colors.black, // Black text color
+                            ),
+                            textAlign: TextAlign.center, // Ensures the text stays centered
+                          ),
+                        ),
+                        // Add New Coins Button
+                        IconButton(
+                          icon: Container(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF8B0000), // Red background
+                              shape: BoxShape.circle, // Make it circular
+                            ),
+                            padding: const EdgeInsets.all(8.0),
+                            child: const Icon(
+                              Icons.add, // The add icon
+                              color: Colors.white, // White icon color
+                              size: 20,
+                            ),
+                          ),
+                          onPressed: () {
+                            // Logic to add new coins
+                            print("Add new coins button pressed");
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
-            ),
-
-
-            // ListView for products (scrollable horizontally with smaller card size)
-            SizedBox(
-              height: 250,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  return _buildProductCard(
-                    products[index]['title']!,
-                    products[index]['image']!,
-                    products[index]['oldPrice']!,
-                    products[index]['newPrice']!,
-                  );
-                },
-              ),
-            ),
-          ],
+              /*SizedBox(
+                height: 250,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    return _buildProductCard(
+                      products[index]['title']!,
+                      products[index]['image']!,
+                      products[index]['oldPrice']!,
+                      products[index]['newPrice']!,
+                    );
+                  },
+                ),
+              ),*/
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFF7A393D),
         currentIndex: _currentIndex,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: const Color(0xFFD4CFC4),
+        unselectedItemColor: Colors.white70,
+        selectedLabelStyle: const TextStyle(
+          fontFamily: 'VecnaBold',
+          fontWeight: FontWeight.bold,
+          fontSize: 17,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontFamily: 'VecnaBold',
+          fontSize: 15,
+        ),
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           if (index == _currentIndex) return;
 
@@ -912,38 +321,49 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
               ),
             );
           } else if (index == 1) {
-            Navigator.pushReplacement(
+            Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => ShopManagementPage(user: widget.user),
               ),
             );
           } else if (index == 2) {
-            Navigator.pushReplacement(
+            Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => UserManagementPage(user: widget.user),
               ),
             );
-          } else if (index == 3) {
-            _navigateToSettings();
           }
         },
-        items: [
+        items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: ImageIcon(
+              AssetImage('assets/homeicnav.png'),
+              size: 20,
+              color: Color(0xFFD4CFC4),
+            ),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.store),
+            icon: ImageIcon(
+              AssetImage('assets/shopnav.png'),
+              size: 30,
+            ),
             label: 'Shop',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.group),
+            icon: ImageIcon(
+              AssetImage('assets/playersnav.png'),
+              size: 30,
+            ),
             label: 'Players',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: ImageIcon(
+              AssetImage('assets/profilenav.png'),
+              size: 25,
+            ),
             label: 'Profile',
           ),
         ],
@@ -951,34 +371,356 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
     );
   }
 
-  Widget _buildCategoryItem(String title, String imagePath, VoidCallback onTap) {
+
+
+
+
+  Widget _buildProductCard(
+      String title, String imagePath, String price, String quantity, Map<String, dynamic> pack) {
     return GestureDetector(
-      onTap: onTap, // Appelle la fonction lors d'un clic
-      child: Column(
-        children: [
-          Container(
+      onTap: () {
+        // Show a dialog with the pack details instead of navigating
+        _showPackDetailsDialog(context, pack);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        width: 160,
+        child: Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Background image with rounded edges
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Image.asset(
+                  'assets/bg_friends.webp', // Background image
+                  fit: BoxFit.cover,
+                ),
+              ),
+              // Content of the card
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Smaller image with rounded corners
+                  AspectRatio(
+                    aspectRatio: 1.0,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8), // Rounded edges for the image
+                      child: Image.asset(
+                        "assets/$imagePath.webp", // Dynamically load image based on imagePath
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      maxLines: 1, // Limit text to one line
+                      overflow: TextOverflow.ellipsis, // Add "..." if the text overflows
+                    ),
+                  ),
+                  // Price with its label and icon (coins or gems)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Row(
+                      children: [
+                        pack['priceType'] == 0
+                            ? const Icon(
+                          Icons.monetization_on,
+                          color: Colors.yellow, // Coin icon color
+                          size: 16,
+                        )
+                            : const Icon(
+                          Icons.account_balance_wallet,
+                          color: Colors.purple, // Gem icon color
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4), // Space between icon and text
+                        const Text(
+                          "Price: ",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          price,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 16, // Adjusted price font size
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          pack['priceType'] == 0 ? "Coins" : "Gems", // Show label based on priceType
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Quantity with its label
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.add_shopping_cart,
+                          color: Colors.green, // Cart icon color
+                          size: 20,
+                        ),
+                        const SizedBox(width: 4), // Space between icon and text
+                        const Text(
+                          "Quantity: ",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          quantity,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPackDetailsDialog(BuildContext context, Map<String, dynamic> pack) async {
+    // Define rewards with odds based on packType
+    List<Map<String, String>> rewardsWithOdds = [];
+
+    switch (pack['packType']) {
+      case 0:
+        rewardsWithOdds = [
+          {'image': 'gold1', 'value': '20', 'odds': '10%'},
+          {'image': 'gold2', 'value': '40', 'odds': '20%'},
+          {'image': 'gold3', 'value': '60', 'odds': '30%'},
+          {'image': 'gold4', 'value': '80', 'odds': '20%'},
+          {'image': 'gold5', 'value': '100', 'odds': '10%'},
+          {'image': 'gold6', 'value': '150', 'odds': '10%'},
+        ];
+        break;
+      case 1:
+        rewardsWithOdds = [
+          {'image': 'gems1', 'value': '5', 'odds': '10%'},
+          {'image': 'gems2', 'value': '10', 'odds': '20%'},
+          {'image': 'gems3', 'value': '15', 'odds': '30%'},
+          {'image': 'gem4', 'value': '20', 'odds': '20%'},
+          {'image': 'gem5', 'value': '30', 'odds': '10%'},
+          {'image': 'gem6', 'value': '50', 'odds': '10%'},
+        ];
+        break;
+      case 2:
+        rewardsWithOdds = [
+          {'image': 'gold2', 'value': '30', 'odds': '15%'},
+          {'image': 'gold3', 'value': '50', 'odds': '20%'},
+          {'image': 'gold4', 'value': '70', 'odds': '25%'},
+          {'image': 'gems1', 'value': '5', 'odds': '10%'},
+          {'image': 'gems2', 'value': '10', 'odds': '20%'},
+          {'image': 'gems3', 'value': '15', 'odds': '10%'},
+        ];
+        break;
+      default:
+        rewardsWithOdds = [];
+        break;
+    }
+
+    // Debugging to see the rewards data
+    print('Rewards with Odds: $rewardsWithOdds');
+
+    // Show dialog with pack details
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16), // Rounded corners for the dialog
+          ),
+          child: Container(
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              image: const DecorationImage(
+                image: AssetImage('assets/bg_friends.webp'), // Fantasy background image
+                fit: BoxFit.cover,
+              ),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 4,
-                  offset: Offset(2, 2),
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
-            child: CircleAvatar(
-              radius: 35,
-              backgroundImage: AssetImage(imagePath),
+            padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Pack Image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/${pack['images']}.webp', // Pack image based on the pack data
+                      width: 150,
+                      height: 150,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Pack Title
+                  Text(
+                    "Pack: ${pack['packType'] ?? 'N/A'}", // Null-aware operator added for safety
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Divider(
+                    color: Colors.black, // Divider color changed to black
+                    thickness: 2,
+                    indent: 30,
+                    endIndent: 30,
+                  ),
+
+                  // Price with appropriate icon based on priceType
+                  _buildPackDetailWithIcon(
+                    pack['priceType'] == 0 ? Icons.monetization_on : Icons.account_balance_wallet,
+                    'Price',
+                    "${pack['price']} ${pack['priceType'] == 0 ? 'Coins' : 'Gems'}",
+                  ),
+                  _buildPackDetailWithIcon(
+                    Icons.shopping_cart,
+                    'Quantity',
+                    pack['quantity']?.toString() ?? 'N/A', // Safe check for null quantity
+                  ),
+                  _buildPackDetailWithIcon(
+                    Icons.category,
+                    'Pack Type',
+                    pack['packType']?.toString() ?? 'N/A', // Safe check for null packType
+                  ),
+                  const SizedBox(height: 10),
+                  const Divider(
+                    color: Colors.black, // Divider color changed to black
+                    thickness: 2,
+                    indent: 30,
+                    endIndent: 30,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Add a section to show rewards with odds
+                  const Text(
+                    'Rewards with Odds',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Check if there are rewards to display
+                  if (rewardsWithOdds.isEmpty)
+                    const Text(
+                      'No rewards available for this pack.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    )
+                  else
+                    ...rewardsWithOdds.map((reward) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: Row(
+                          children: [
+                            Image.asset(
+                              'assets/${reward['image']}.webp', // Load the reward image
+                              width: 30,
+                              height: 30,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              "${reward['value']} (${reward['odds']})", // Display value and odds
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+
+                  // Close Button
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    label: const Text(
+                      'Close',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7A393D), // Dark red fantasy color
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          SizedBox(height: 8),
+        );
+      },
+    );
+  }
+
+  Widget _buildPackDetailWithIcon(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.black),
+          const SizedBox(width: 8),
           Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+            "$label: ",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 16, color: Colors.black),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -986,76 +728,18 @@ class _ShopManagementPageState extends State<ShopManagementPage> {
     );
   }
 
+  Future<void> fetchBasicShop() async {
+    try {
+      final packss = await _shopService.fetchPacksShop();
 
-  Widget _buildProductCard(
-      String title, String imagePath, String oldPrice, String newPrice) {
-    return GestureDetector(
-      onTap: () {
-        // Navigation vers ItemDetailPage avec les données du produit
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ItemDetailpage(
-              title: title,        // Titre du produit
-              imagePath: imagePath, // Image du produit
-              oldPrice: oldPrice,   // Ancien prix
-              newPrice: newPrice,   // Nouveau prix
-            ),
-          ),
-        );
-      },
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 8),
-        width: 160,
-        child: Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AspectRatio(
-                aspectRatio: 1.0,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.asset(
-                    imagePath,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  title,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                  maxLines: 1, // Limite le texte à une ligne
-                  overflow: TextOverflow.ellipsis, // Ajoute "..." si le texte dépasse
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text(
-                  oldPrice,
-                  style: TextStyle(
-                    decoration: TextDecoration.lineThrough,
-                    color: Colors.red,
-                    fontSize: 12, // Réduit la taille pour économiser de l'espace
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text(
-                  newPrice,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+      setState(() {
+        totalPacks = packss.length;
+        packs = packss;
+        print(packs);
+      });
+    } catch (e) {
+      print('Error fetching players: $e');
+    }
   }
 
 }

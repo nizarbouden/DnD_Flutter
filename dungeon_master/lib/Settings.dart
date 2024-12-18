@@ -180,14 +180,10 @@ class _SettingsPageState extends State<SettingsPage> {
               _showLogoutConfirmationDialog(context);
             } else if (label == "Back") {
               // Si l'utilisateur a été modifié, renvoyer les nouvelles données à la page précédente
-              if (user != null) {
-                Navigator.pop(context, user);  // Passer les données de l'utilisateur modifié à la page précédente
-              } else {
-                Navigator.pop(context);  // Revenir sans données si l'utilisateur n'a pas été modifié
-              }
-            }
+              Navigator.pop(context, user);  // Passer les données de l'utilisateur modifié à la page précédente
+                        }
             else if (label == "Change Name") {
-              if (user == null || user['name'] == null) {
+              if (user['name'] == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('User data is missing or invalid')),
                 );
@@ -417,7 +413,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
 
   void _showChangeNameDialog(BuildContext context, Map<String, dynamic> user) {
-    if (user == null || user['_id'] == null) {
+    if (user['_id'] == null) {
       print('User or User ID is missing!');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User data or ID is not available')),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart'; // For GIF animation equivalent
 import 'dart:async';
 
 class SplashScreen extends StatefulWidget {
