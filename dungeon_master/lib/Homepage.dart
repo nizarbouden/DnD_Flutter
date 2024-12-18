@@ -1,3 +1,5 @@
+import 'package:dungeon_master/gamemodes_page.dart';
+import 'package:dungeon_master/icon_player.dart';
 import 'package:dungeon_master/service/auth_service.dart';
 import 'package:dungeon_master/service/equip_service.dart';
 import 'package:dungeon_master/service/gm_service.dart';
@@ -18,7 +20,8 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final AuthService _userService = AuthService();
   final EquipService _eqpService = EquipService();
@@ -69,11 +72,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       }
       setState(() {
         totalPlayers = users.length;
-        onlinePlayers  = onlineCount;
+        onlinePlayers = onlineCount;
         offlinePlayers = offlineCount;
-
       });
-        } catch (e) {
+    } catch (e) {
       print('Error fetching players: $e');
     }
   }
@@ -83,9 +85,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       final eqps = await _eqpService.fetchEqps();
       setState(() {
         totalEquipments = eqps.length;
-
       });
-        } catch (e) {
+    } catch (e) {
       print('Error fetching players: $e');
     }
   }
@@ -95,9 +96,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       final icons = await _icService.fetchIcons();
       setState(() {
         totalIcons = icons.length;
-
       });
-        } catch (e) {
+    } catch (e) {
       print('Error fetching icons: $e');
     }
   }
@@ -107,7 +107,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       final gms = await _gmService.fethcGms();
       setState(() {
         totalgms = gms.length;
-
+        print(gms);
       });
     } catch (e) {
       print('Error fetching icons: $e');
@@ -118,11 +118,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard',style: TextStyle(
-          color: Color(0xFFD4CFC4), // Set text color to white
-          fontSize: 20,        // Increase the font size
-          fontWeight: FontWeight.bold, // Optional: Make it bold
-        ),),
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(
+            color: Color(0xFFD4CFC4), // Set text color to white
+            fontSize: 20, // Increase the font size
+            fontWeight: FontWeight.bold, // Optional: Make it bold
+          ),
+        ),
         backgroundColor: const Color(0xFF502722),
         actions: [
           IconButton(
@@ -145,7 +148,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           Positioned.fill(
             child: Image.asset(
               'assets/bg_dash.webp', // Path to your background image
-              fit: BoxFit.cover,       // Ensures the image fills the space
+              fit: BoxFit.cover, // Ensures the image fills the space
             ),
           ),
           // Foreground Content
@@ -167,145 +170,179 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         'Equipments',
                         totalEquipments.toString(),
                         'assets/eqp.png',
-                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => ShopManagementPage(user: widget.user,))),
+                        () {},
                       ),
                       _buildStatCard(
                         'Players',
                         totalPlayers.toString(),
                         'assets/items.png',
-                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => UserManagementPage(user: widget.user,))),
+                        () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => UserManagementPage(
+                                      user: widget.user,
+                                    ))),
                       ),
                       _buildStatCard(
                         'Icons',
                         totalIcons.toString(),
                         'assets/icc.png',
-                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => ShopManagementPage(user: widget.user,))),
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => IconPlayer(user: widget.user),
+                          ),
+                        ),
                       ),
                       _buildStatCard(
                         'Game Mode(s)',
                         totalgms.toString(),
                         'assets/gamemodes.png',
-                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => ShopManagementPage(user: widget.user,))),
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                GamemodesPage(user: widget.user),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
                   // Section du graphique
-    Card(
-    elevation: 6, // Add elevation for shadow effect
-    shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12), // Rounded corners
-    ),
-    child: Stack(
-    children: [
-    // Background Image
-    Positioned.fill(
-    child: ClipRRect(
-    borderRadius: BorderRadius.circular(12), // Match card's rounded corners
-    child: Image.asset(
-    'assets/bg_friends.webp', // Replace with your image path
-    fit: BoxFit.cover,    // Ensures image covers the entire card
-    color: Colors.black.withOpacity(0.3), // Optional: Darken the image
-    colorBlendMode: BlendMode.darken,
-    ),
-    ),
-    ),
-    // Foreground Content
-    Padding(
-    padding: const EdgeInsets.all(16.0), // Padding for spacing inside the card
-    child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-    // Title
-      Text(
-        'Online Vs Offline Players (Total: $totalPlayers)',
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFFD4CFC4), // Text color for better visibility
-        ),
-      ),
+                  Card(
+                    elevation: 6, // Add elevation for shadow effect
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(12), // Rounded corners
+                    ),
+                    child: Stack(
+                      children: [
+                        // Background Image
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                                12), // Match card's rounded corners
+                            child: Image.asset(
+                              'assets/bg_friends.webp', // Replace with your image path
+                              fit: BoxFit
+                                  .cover, // Ensures image covers the entire card
+                              color: Colors.black.withOpacity(
+                                  0.3), // Optional: Darken the image
+                              colorBlendMode: BlendMode.darken,
+                            ),
+                          ),
+                        ),
+                        // Foreground Content
+                        Padding(
+                          padding: const EdgeInsets.all(
+                              16.0), // Padding for spacing inside the card
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Title
+                              Text(
+                                'Online Vs Offline Players (Total: $totalPlayers)',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(
+                                      0xFFD4CFC4), // Text color for better visibility
+                                ),
+                              ),
 
-      const SizedBox(height: 20),
-    // Pie Chart
-    AspectRatio(
-    aspectRatio: 1.6,
-    child: Card(
-    elevation: 0,
-    color: Colors.transparent,
-    shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12),
-    ),
-    child: Stack(
-    children: [
-    // Pie Chart Content
-    Center(
-    child: PieChart(
-    PieChartData(
-    sections: _generatePieSections(online: onlinePlayers, offline: offlinePlayers),
-    borderData: FlBorderData(show: false),
-    centerSpaceRadius: 40, // Space in center for aesthetics
-    sectionsSpace: 4, // Space between sections
-    ),
-    ),
-    ),
-    ],
-    ),
-    ),
-    ),
-    const SizedBox(height: 16), // Spacing between chart and legend
-    // Legend Section
-    const Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-    // Online Players Legend
-    Row(
-    children: [
-    Icon(Icons.circle, color: Color(0xFF7A393D), size: 16), // Red Circle
-    SizedBox(width: 8),
-    Text(
-    'Online Players',
-    style: TextStyle(
-    color: Colors.white,
-    fontSize: 14,
-    ),
-    ),
-    ],
-    ),
-    SizedBox(width: 20), // Space between legends
-    // Offline Players Legend
-    Row(
-    children: [
-    Icon(Icons.circle, color: Color(0xFFD4CFC4), size: 16), // White Circle
-    SizedBox(width: 8),
-    Text(
-    'Offline Players',
-    style: TextStyle(
-    color: Colors.white,
-    fontSize: 14,
-    ),
-    ),
-    ],
-    ),
-    ],
-    ),
-    ],
-    ),
-    ),
-    ],
-    ),
-    ),
-
-    ],
+                              const SizedBox(height: 20),
+                              // Pie Chart
+                              AspectRatio(
+                                aspectRatio: 1.6,
+                                child: Card(
+                                  elevation: 0,
+                                  color: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      // Pie Chart Content
+                                      Center(
+                                        child: PieChart(
+                                          PieChartData(
+                                            sections: _generatePieSections(
+                                                online: onlinePlayers,
+                                                offline: offlinePlayers),
+                                            borderData:
+                                                FlBorderData(show: false),
+                                            centerSpaceRadius:
+                                                40, // Space in center for aesthetics
+                                            sectionsSpace:
+                                                4, // Space between sections
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(
+                                  height:
+                                      16), // Spacing between chart and legend
+                              // Legend Section
+                              const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Online Players Legend
+                                  Row(
+                                    children: [
+                                      Icon(Icons.circle,
+                                          color: Color(0xFF7A393D),
+                                          size: 16), // Red Circle
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Online Players',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(width: 20), // Space between legends
+                                  // Offline Players Legend
+                                  Row(
+                                    children: [
+                                      Icon(Icons.circle,
+                                          color: Color(0xFFD4CFC4),
+                                          size: 16), // White Circle
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Offline Players',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Color(0xFF7A393D), // Deep red background for medieval feel
+        backgroundColor:
+            Color(0xFF7A393D), // Deep red background for medieval feel
         currentIndex: _currentIndex,
-        selectedItemColor: Color(0xFFD4CFC4), // Slightly off-white for selected item
+        selectedItemColor:
+            Color(0xFFD4CFC4), // Slightly off-white for selected item
         unselectedItemColor: Colors.white70, // Soft white for unselected items
         selectedLabelStyle: const TextStyle(
           fontFamily: 'VecnaBold', // Fantasy-inspired font
@@ -352,7 +389,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         items: const [
           BottomNavigationBarItem(
             icon: ImageIcon(
-              AssetImage('assets/homeicnav.png'), // Replace with your custom sword icon
+              AssetImage(
+                  'assets/homeicnav.png'), // Replace with your custom sword icon
               size: 20,
               color: Color(0xFFD4CFC4),
             ),
@@ -360,33 +398,35 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
-              AssetImage('assets/shopnav.png'), // Replace with a medieval store icon
+              AssetImage(
+                  'assets/shopnav.png'), // Replace with a medieval store icon
               size: 30,
             ),
             label: 'Shop',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
-              AssetImage('assets/playersnav.png'), // Replace with a players or adventurers icon
+              AssetImage(
+                  'assets/playersnav.png'), // Replace with a players or adventurers icon
               size: 30,
             ),
             label: 'Players',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
-              AssetImage('assets/profilenav.png'), // Replace with a shield or profile icon
+              AssetImage(
+                  'assets/profilenav.png'), // Replace with a shield or profile icon
               size: 25,
             ),
             label: 'Profile',
           ),
         ],
       ),
-
-
     );
   }
 
-  Widget _buildStatCard(String title, String count, String imagePath, VoidCallback onPressed) {
+  Widget _buildStatCard(
+      String title, String count, String imagePath, VoidCallback onPressed) {
     return Card(
       elevation: 6, // Add prominent elevation for depth
       shadowColor: Colors.black26, // Subtle shadow
@@ -402,7 +442,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               child: Image.asset(
                 'assets/bg_friends.webp', // Background image path
                 fit: BoxFit.cover, // Cover the entire card
-                color: Colors.black.withOpacity(0.3), // Optional: Add a dark overlay
+                color: Colors.black
+                    .withOpacity(0.3), // Optional: Add a dark overlay
                 colorBlendMode: BlendMode.darken, // Blend to darken the image
               ),
             ),
@@ -427,7 +468,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFD4CFC4), // Visible on the darkened background
+                      color: Color(
+                          0xFFD4CFC4), // Visible on the darkened background
                     ),
                   ),
                   // Title Text
@@ -457,9 +499,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-
-
-
   // Données échantillons pour le graphique
   List<BarChartGroupData> _createSampleData() {
     return List.generate(8, (index) {
@@ -467,19 +506,21 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         x: index,
         barRods: [
           BarChartRodData(
-            y: (index + 1) * 10.0,      // Hauteur de la barre bleue
-            colors: [Colors.blue],       // Utilisation de 'colors' pour la couleur de la barre
-            width: 15,                   // Largeur de la barre
+            y: (index + 1) * 10.0, // Hauteur de la barre bleue
+            colors: [
+              Colors.blue
+            ], // Utilisation de 'colors' pour la couleur de la barre
+            width: 15, // Largeur de la barre
             borderRadius: BorderRadius.zero, // Bordure de la barre
           ),
           BarChartRodData(
-            y: (index + 1) * 7.0,       // Hauteur de la barre verte
-            colors: [Colors.green],      // Utilisation de 'colors' pour la couleur de la barre
-            width: 15,                   // Largeur de la barre
+            y: (index + 1) * 7.0, // Hauteur de la barre verte
+            colors: [
+              Colors.green
+            ], // Utilisation de 'colors' pour la couleur de la barre
+            width: 15, // Largeur de la barre
             borderRadius: BorderRadius.zero, // Bordure de la barre
           ),
-
-
         ],
       );
     });
@@ -487,8 +528,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   Future<void> _navigateToSettings() async {
     try {
-      final response = await _userService.fetchAdminByEmail(
-          widget.user.value['email']);
+      final response =
+          await _userService.fetchAdminByEmail(widget.user.value['email']);
       if (response['error'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response['message'])),
@@ -509,13 +550,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(
-            'Erreur lors de la récupération des données utilisateur.')),
+        const SnackBar(
+            content: Text(
+                'Erreur lors de la récupération des données utilisateur.')),
       );
     }
   }
+
   // Function to Generate PieChart Sections
-  List<PieChartSectionData> _generatePieSections({required int online, required int offline}) {
+  List<PieChartSectionData> _generatePieSections(
+      {required int online, required int offline}) {
     final total = online + offline;
     return [
       PieChartSectionData(
